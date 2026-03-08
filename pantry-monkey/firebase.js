@@ -10,7 +10,7 @@ const firebaseConfig = {
   messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
-console.log("firebase key", process.env.EXPO_PUBLIC_FIREBASE_API_KEY);
+
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
