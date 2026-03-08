@@ -11,6 +11,13 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Debug: Check if env vars are loaded
+console.log("Firebase Config Check:", {
+  hasApiKey: !!process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  hasProjectId: !!process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+});
+
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
