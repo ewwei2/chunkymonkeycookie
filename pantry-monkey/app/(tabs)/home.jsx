@@ -35,14 +35,14 @@ const seasonalProduce = {
   },
 };
 
-// Recipe categories
+// Recipe categories with images
 const recipeCategories = [
-  { name: "Breakfast", icon: "🍳" },
-  { name: "Lunch", icon: "🍔" },
-  { name: "Dinner", icon: "🍽️" },
-  { name: "Dessert", icon: "🍰" },
-  { name: "Snack", icon: "🍌" },
-  { name: "Appetizer", icon: "🥗" },
+  { name: "Breakfast", icon: null, image: require("../../assets/breakfast-pan.png"), type: "breakfast" },
+  { name: "Lunch", icon: null, image: require("../../assets/burger.png"), type: "lunch" },
+  { name: "Dinner", icon: null, image: require("../../assets/pasta.png"), type: "dinner" },
+  { name: "Dessert", icon: null, image: require("../../assets/smiley-cheesecake.png"), type: "dessert" },
+  { name: "Snack", icon: null, image: require("../../assets/banana.png"), type: "snack" },
+  { name: "More", icon: null, image: require("../../assets/smiley-drink.png"), type: "beverage" },
 ];
 
 const getCurrentSeason = () => {
@@ -88,9 +88,17 @@ export default function HomeScreen() {
         `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${season.searchTerms}&number=4&ranking=2&apiKey=${SPOONACULAR_API_KEY}`
       );
       const data = await response.json();
-      setInSeasonRecipes(data);
+      
+      // Make sure data is an array before setting
+      if (Array.isArray(data)) {
+        setInSeasonRecipes(data);
+      } else {
+        console.log("API response:", data);
+        setInSeasonRecipes([]);
+      }
     } catch (error) {
       console.error("Error fetching in-season recipes:", error);
+      setInSeasonRecipes([]);
     } finally {
       setLoadingRecipes(false);
     }
@@ -106,10 +114,13 @@ export default function HomeScreen() {
     setFavorites((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleCategoryPress = (categoryName) => {
+  const handleCategoryPress = (category) => {
     router.push({
       pathname: "/recipeCategory",
-      params: { category: categoryName },
+      params: { 
+        category: category.name,
+        type: category.type 
+      },
     });
   };
 
@@ -166,9 +177,13 @@ export default function HomeScreen() {
           <Pressable 
             key={index} 
             style={styles.categoryCard}
-            onPress={() => handleCategoryPress(category.name)}
+            onPress={() => handleCategoryPress(category)}
           >
-            <Text style={styles.categoryIcon}>{category.icon}</Text>
+            {category.image ? (
+              <Image source={category.image} style={styles.categoryImage} />
+            ) : (
+              <Text style={styles.categoryCardIcon}>{category.icon}</Text>
+            )}
             <Text style={styles.categoryName}>{category.name}</Text>
           </Pressable>
         ))}
@@ -181,7 +196,7 @@ export default function HomeScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color="#6C7C36" />
         </View>
-      ) : (
+      ) : inSeasonRecipes && inSeasonRecipes.length > 0 ? (
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
@@ -208,6 +223,10 @@ export default function HomeScreen() {
             </Pressable>
           ))}
         </ScrollView>
+      ) : (
+        <View style={styles.emptyRecipes}>
+          <Text style={styles.emptyText}>No seasonal recipes available</Text>
+        </View>
       )}
 
       <View style={{ height: 100 }} />
@@ -221,7 +240,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F3EE",
   },
   header: {
-    paddingTop: 60,
+    paddingTop: 70,
     paddingHorizontal: 24,
     paddingBottom: 20,
   },
@@ -334,8 +353,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  categoryIcon: {
+  categoryCardIcon: {
     fontSize: 36,
+    marginBottom: 6,
+  },
+  categoryImage: {
+    width: 50,
+    height: 50,
+    resizeMode: "contain",
     marginBottom: 6,
   },
   categoryName: {
@@ -390,5 +415,14 @@ const styles = StyleSheet.create({
     color: "#333",
     padding: 10,
     lineHeight: 18,
+  },
+  emptyRecipes: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 180,
+  },
+  emptyText: {
+    color: "#888",
+    fontSize: 16,
   },
 });
