@@ -31,7 +31,7 @@ export default function Chat() {
     const [messages, setMessages] = useState([
         {
             role: 'assistant',
-            content: "Hey there! 👨‍🍳 I'm Don, your personal chef assistant! Ask me anything about cooking, ingredients, or food tips. What's cooking today?",
+            content: "Hey there! 👨‍🍳 I'm Chunky Monkey, your personal chef assistant! Ask me anything about cooking, ingredients, or food tips. What's cooking today?",
         },
     ]);
     const [input, setInput] = useState('');
