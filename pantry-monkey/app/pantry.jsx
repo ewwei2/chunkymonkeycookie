@@ -140,16 +140,45 @@ export default function CategoryItems({ route }) {
         data={filteredItems}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <PantryItem
-            item={item}
-            onEdit={() => openEditModal(item)}
-            onDelete={() => removeItem(item.id)}
-          />
+        <View style={styles.itemCard}>
+            <View
+            style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+            }}
+            >
+            <View style={{ flex: 1 }}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={styles.itemDetail}>
+                {item.quantity} {item.unit}
+                </Text>
+                <Text style={styles.itemDetail}>{item.storageLocation}</Text>
+                <Text style={styles.itemDetail}>Exp. {item.expirationDate}</Text>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 8 }}>
+                <TouchableOpacity
+                style={styles.editAction}
+                onPress={() => openEditModal(item)}
+                >
+                <Ionicons name="pencil" size={20} color="#fff" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                style={styles.deleteAction}
+                onPress={() => removeItem(item.id)}
+                >
+                <Ionicons name="trash" size={20} color="#fff" />
+                </TouchableOpacity>
+            </View>
+            </View>
+        </View>
         )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No items yet — tap + to add something!</Text>
-        }
-      />
+  ListEmptyComponent={
+    <Text style={styles.emptyText}>No items yet — tap + to add something!</Text>
+  }
+/>
 
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.overlay}>
