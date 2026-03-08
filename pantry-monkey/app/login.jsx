@@ -63,6 +63,8 @@ export default function LoginScreen() {
     }
   };
 
+  
+
   return (
     <KeyboardAvoidingView
       style={styles.screen}
@@ -97,6 +99,10 @@ export default function LoginScreen() {
             setErrorMessage("");
           }}
         />
+        {/* DEV BUTTON */}
+        <Pressable onPress={() => router.push("/pantry")}>
+            <Text>Skip Login → Pantry</Text>
+        </Pressable>
 
         {errorMessage ? (
           <Text style={styles.error}>{errorMessage}</Text>
