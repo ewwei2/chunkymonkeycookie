@@ -13,7 +13,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { auth } from "../firebase";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -24,17 +25,33 @@ export default function LoginScreen() {
   const getFriendlyError = (code) => {
     switch (code) {
       case "auth/invalid-email":
-        return "Please enter a valid email.";
+        return "Please enter a valid email address.";
       case "auth/user-not-found":
       case "auth/wrong-password":
       case "auth/invalid-credential":
-        return "Incorrect email or password.";
+        return "Invalid email or password.";
       case "auth/email-already-in-use":
-        return "Account already exists.";
+        return "This email is already registered.";
       case "auth/weak-password":
-        return "Password must be at least 6 characters.";
+        return "Password should be at least 6 characters.";
       default:
         return "Something went wrong.";
+    }
+  };
+
+  const createUserDocument = async (user) => {
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    // Only create if it doesn't exist
+    if (!userSnap.exists()) {
+      await setDoc(userRef, {
+        email: user.email,
+        displayName: "",
+        photoURL: "",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
     }
   };
 
@@ -49,11 +66,17 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
+      let userCredential;
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch {
-        await createUserWithEmailAndPassword(auth, email, password);
+        // Try to sign in first
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
+      } catch (signInError) {
+        // If sign in fails, create a new account
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
       }
+
+      // Create/verify user document exists
+      await createUserDocument(userCredential.user);
 
       router.replace("/pantry");
     } catch (error) {
@@ -62,8 +85,6 @@ export default function LoginScreen() {
       setLoading(false);
     }
   };
-
-  
 
   return (
     <KeyboardAvoidingView
@@ -81,6 +102,7 @@ export default function LoginScreen() {
           placeholder="Email"
           placeholderTextColor="#8C8C8C"
           autoCapitalize="none"
+          keyboardType="email-address"
           value={email}
           onChangeText={(t) => {
             setEmail(t);
@@ -99,24 +121,6 @@ export default function LoginScreen() {
             setErrorMessage("");
           }}
         />
-
-        {/* DEV BUTTON */}
-      <Pressable onPress={() => router.push("/pantry")}>
-        <Text>Skip Login → Pantry</Text>
-      </Pressable>
-
-        {/* DEV BUTTON */}
-        <Pressable
-        onPress={() =>
-            router.push({
-            pathname: "/categoryItem",
-            params: { category: "Fruits" },
-            })
-        }
-        >
-        <Text>Skip Login → Fruits</Text>
-        </Pressable>
-
 
         {errorMessage ? (
           <Text style={styles.error}>{errorMessage}</Text>
@@ -142,12 +146,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F3EE",
     justifyContent: "space-between",
   },
-
   content: {
     paddingTop: 120,
     paddingHorizontal: 32,
   },
-
   title: {
     fontSize: 40,
     fontWeight: "600",
@@ -155,7 +157,6 @@ const styles = StyleSheet.create({
     color: "#3A1E14",
     marginBottom: 12,
   },
-
   subtitle: {
     fontSize: 18,
     textAlign: "center",
@@ -163,7 +164,6 @@ const styles = StyleSheet.create({
     marginBottom: 60,
     lineHeight: 24,
   },
-
   input: {
     backgroundColor: "#EDEFF2",
     borderRadius: 30,
@@ -172,19 +172,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 20,
   },
-
   error: {
     color: "#B00020",
     marginTop: 6,
     textAlign: "center",
   },
-
   button: {
     backgroundColor: "#6C7C36",
     paddingVertical: 22,
     alignItems: "center",
   },
-
   buttonText: {
     color: "white",
     fontSize: 26,

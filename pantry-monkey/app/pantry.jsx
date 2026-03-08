@@ -22,17 +22,158 @@ import AddItemModal from '../components/AddItemModal';
 
 export default function Pantry(){
 
-    const [search, setSearch] = useState('');
-    const [modalVisible, setModalVisible] = useState(false);
+export default function CategoryItems() {
 
-    // open category when user taps item
-    // navigates to categoryItem.jsx
-    const openCategory = (category) => {
-        router.push({
-            pathname: "/categoryItem",  // screen to open
-            params: { category },   // go to chosen category
+    const [user, setUser] = useState(auth.currentUser);
+
+    const { category: selectedCategory } = useLocalSearchParams();
+
+    // data state
+    const [items, setItems] = useState([]);
+
+    // ui state
+    const [modalVisible, setModalVisible] = useState(false);
+    const [editingID, setEditingID] = useState(null);
+    const [search, setSearch] = useState('');
+
+    // form state
+    const [name, setName] = useState('');
+    const [category, setCategory] = useState(selectedCategory || '');
+    const [quantity, setQuantity] = useState('');
+    const [unit, setUnit] = useState('');
+    const [storageLocation, setStorageLocation] = useState('');
+    const [dateAdded, setDateAdded] = useState(new Date().toLocaleDateString('en-US'));
+    const [expirationDate, setExpirationDate] = useState('');
+    
+    // Listen for auth state changes
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            console.log("Auth state changed:", currentUser?.uid || "No user");
+            setUser(currentUser);
         });
+        return unsubscribe;
+    }, []);
+
+    useEffect(() => {
+        setCategory(selectedCategory || '');
+    }, [selectedCategory]);
+
+
+    useEffect(() => {
+        if (user) {
+            loadItems();
+        }
+    }, [selectedCategory, user]);
+
+    const loadItems = async () => {
+        if (!user) return;
+
+        try {
+            const pantryItems = await getPantryItems(user.uid);
+            const filtered = pantryItems.filter(
+                (item) => !selectedCategory || item.category === selectedCategory
+            );
+            setItems(filtered);
+        } catch (error) {
+            console.error("Load error:", error);
+            Alert.alert("Error", error.message);
+        }
     };
+
+    const createItem = async (newItem) => {
+        if (!user) return;
+
+        try {
+            await addPantryItemToFirestore(user.uid, newItem);
+            await loadItems();
+        } catch (error) {
+            Alert.alert("Error", error.message);
+        }
+    };
+
+    const updateItem = async (updatedItem) => {
+        if (!user) return;
+
+        try {
+            const { id, ...updates } = updatedItem;
+            await updatePantryItemInFirestore(user.uid, id, updates);
+            await loadItems();
+        } catch (error) {
+            Alert.alert("Error", error.message);
+        }
+    };
+
+    const removeItem = async (id) => {
+        if (!user) return;
+
+        try {
+            await deletePantryItemFromFirestore(user.uid, id);
+            await loadItems();
+        } catch (error) {
+            Alert.alert("Error", error.message);
+        }
+    };
+
+    const resetForm = () => {
+        setName('');
+        setCategory(selectedCategory || '');
+        setQuantity('');
+        setUnit('');
+        setStorageLocation('');
+        setDateAdded(new Date().toLocaleDateString('en-US'));
+        setExpirationDate('');
+        setEditingID(null);
+    };
+
+    const openAddModal = () => {
+    resetForm();
+    setModalVisible(true);
+  };
+
+  const openEditModal = (item) => {
+    setName(item.name || '');
+    setCategory(item.category || selectedCategory || '');
+    setQuantity(item.quantity || '');
+    setUnit(item.unit || '');
+    setStorageLocation(item.storageLocation || '');
+    setDateAdded(item.dateAdded || '');
+    setExpirationDate(item.expirationDate || '');
+    setEditingID(item.id);
+    setModalVisible(true);
+  };
+
+  const saveItem = async () => {
+    if (!name.trim()) {
+      Alert.alert('Missing info', 'Please enter an item name.');
+      return;
+    }
+
+    const itemPayload = {
+      id: editingID || Date.now().toString(),
+      name,
+      category,
+      quantity,
+      unit,
+      storageLocation,
+      dateAdded,
+      expirationDate,
+    };
+
+    if (editingID) {
+      await updateItem(itemPayload);
+    } else {
+      await createItem(itemPayload);
+    }
+
+    setModalVisible(false);
+    resetForm();
+    };
+
+    const filteredItems = items.filter(
+    (item) =>
+      (!selectedCategory || item.category === selectedCategory) &&
+      item.name.toLowerCase().includes(search.toLowerCase())
+    );
 
     return (
         <View style={ styles.container }>
@@ -63,6 +204,49 @@ export default function Pantry(){
                     <Text style={styles.addButtonText}>+</Text>
                 </Pressable>
             </View>
+            </View>
+        </View>
+        )}
+  ListEmptyComponent={
+    <Text style={styles.emptyText}>No items yet — tap + to add something!</Text>
+  }
+/>
+
+      <Modal visible={modalVisible} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>
+              {editingID ? "Edit Item" : "Add Item"}
+            </Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Item name"
+              value={name}
+              onChangeText={setName}
+            />
+
+            <Text style={styles.label}>Category</Text>
+            <Picker selectedValue={category} onValueChange={setCategory} style={styles.picker}>
+              <Picker.Item label="Select a category..." value="" />
+              <Picker.Item label="Grains" value="Grains" />
+              <Picker.Item label="Eggs & Dairy" value="Eggs & Dairy" />
+              <Picker.Item label="Seafood" value="Seafood" />
+              <Picker.Item label="Fruits" value="Fruits" />
+              <Picker.Item label="Vegetables" value="Vegetables" />
+              <Picker.Item label="Drinks" value="Drinks" />
+              <Picker.Item label="Meats" value="Meats" />
+              <Picker.Item label="Snacks & Sweets" value="Snacks & Sweets" />
+              <Picker.Item label="Frozen" value="Frozen" />
+              <Picker.Item label="Other" value="Other" />
+            </Picker>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Quantity"
+              value={quantity}
+              onChangeText={setQuantity}
+            />
 
             {/* shelves */}
             <View style={styles.pantryCard}>
@@ -160,7 +344,9 @@ export default function Pantry(){
             />
         
         </View>
-    );
+      </Modal>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
