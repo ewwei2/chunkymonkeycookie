@@ -38,11 +38,11 @@ const seasonalProduce = {
 // Recipe categories with images
 const recipeCategories = [
   { name: "Breakfast", icon: null, image: require("../../assets/breakfast-pan.png"), type: "breakfast" },
-  { name: "Lunch", icon: "🥪", image: null, type: "main course" },
-  { name: "Dinner", icon: "🍽️", image: null, type: "main course" },
-  { name: "Dessert", icon: "🍰", image: null, type: "dessert" },
-  { name: "Snack", icon: "🍿", image: null, type: "snack" },
-  { name: "Appetizer", icon: "🥗", image: null, type: "appetizer" },
+  { name: "Lunch", icon: null, image: require("../../assets/burger.png"), type: "lunch" },
+  { name: "Dinner", icon: null, image: require("../../assets/pasta.png"), type: "dinner" },
+  { name: "Dessert", icon: null, image: require("../../assets/smiley-cheesecake.png"), type: "dessert" },
+  { name: "Snack", icon: null, image: require("../../assets/banana.png"), type: "snack" },
+  { name: "More", icon: null, image: require("../../assets/smiley-drink.png"), type: "beverage" },
 ];
 
 const getCurrentSeason = () => {
@@ -88,9 +88,17 @@ export default function HomeScreen() {
         `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${season.searchTerms}&number=4&ranking=2&apiKey=${SPOONACULAR_API_KEY}`
       );
       const data = await response.json();
-      setInSeasonRecipes(data);
+      
+      // Make sure data is an array before setting
+      if (Array.isArray(data)) {
+        setInSeasonRecipes(data);
+      } else {
+        console.log("API response:", data);
+        setInSeasonRecipes([]);
+      }
     } catch (error) {
       console.error("Error fetching in-season recipes:", error);
+      setInSeasonRecipes([]);
     } finally {
       setLoadingRecipes(false);
     }
@@ -188,7 +196,7 @@ export default function HomeScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color="#6C7C36" />
         </View>
-      ) : (
+      ) : inSeasonRecipes && inSeasonRecipes.length > 0 ? (
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
@@ -215,6 +223,10 @@ export default function HomeScreen() {
             </Pressable>
           ))}
         </ScrollView>
+      ) : (
+        <View style={styles.emptyRecipes}>
+          <Text style={styles.emptyText}>No seasonal recipes available</Text>
+        </View>
       )}
 
       <View style={{ height: 100 }} />
@@ -403,5 +415,14 @@ const styles = StyleSheet.create({
     color: "#333",
     padding: 10,
     lineHeight: 18,
+  },
+  emptyRecipes: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 180,
+  },
+  emptyText: {
+    color: "#888",
+    fontSize: 16,
   },
 });

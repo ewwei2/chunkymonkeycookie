@@ -17,11 +17,11 @@ const SPOONACULAR_API_KEY = process.env.EXPO_PUBLIC_SPOONACULAR_API_KEY;
 // Category images and icons
 const categoryAssets = {
   Breakfast: { image: require("../assets/breakfast-pan.png"), icon: null },
-  Lunch: { image: null, icon: "🥪" },
-  Dinner: { image: null, icon: "🍽️" },
-  Dessert: { image: null, icon: "🍰" },
-  Snack: { image: null, icon: "🍿" },
-  Appetizer: { image: null, icon: "🥗" },
+  Lunch: { image: require("../assets/burger.png"), icon: null },
+  Dinner: { image: require("../assets/pasta.png"), icon: null },
+  Dessert: { image: require("../assets/smiley-cheesecake.png"), icon: null },
+  Snack: { image: require("../assets/banana.png"), icon: null },
+  More: { image: require("../assets/smiley-drink.png"), icon: null },
 };
 
 export default function RecipeCategoryScreen() {
@@ -39,11 +39,33 @@ export default function RecipeCategoryScreen() {
 
   const fetchRecipesByType = async () => {
     try {
-      const mealType = type || category.toLowerCase();
-      const response = await fetch(
-        `https://api.spoonacular.com/recipes/complexSearch?type=${mealType}&number=20&addRecipeInformation=true&apiKey=${SPOONACULAR_API_KEY}`
-      );
+      let url;
+      
+      // Use different API endpoints based on category
+      if (type === "snack") {
+        // Snacks - search by query
+        url = `https://api.spoonacular.com/recipes/complexSearch?query=snack&number=20&addRecipeInformation=true&apiKey=${SPOONACULAR_API_KEY}`;
+      } else if (type === "beverage") {
+        // Beverages/Drinks
+        url = `https://api.spoonacular.com/recipes/complexSearch?type=drink&number=20&addRecipeInformation=true&apiKey=${SPOONACULAR_API_KEY}`;
+      } else if (type === "lunch") {
+        // Lunch - use main course + tags
+        url = `https://api.spoonacular.com/recipes/complexSearch?type=main+course&tags=lunch&number=20&addRecipeInformation=true&apiKey=${SPOONACULAR_API_KEY}`;
+      } else if (type === "dinner") {
+        // Dinner - use main course + tags
+        url = `https://api.spoonacular.com/recipes/complexSearch?type=main+course&tags=dinner&number=20&addRecipeInformation=true&apiKey=${SPOONACULAR_API_KEY}`;
+      } else {
+        // Breakfast, Dessert - these work directly
+        url = `https://api.spoonacular.com/recipes/complexSearch?type=${type}&number=20&addRecipeInformation=true&apiKey=${SPOONACULAR_API_KEY}`;
+      }
+
+      console.log("Fetching from:", url);
+      
+      const response = await fetch(url);
       const data = await response.json();
+      
+      console.log("Results:", data.results?.length || 0);
+      
       setRecipes(data.results || []);
     } catch (error) {
       console.error("Error fetching recipes:", error);
