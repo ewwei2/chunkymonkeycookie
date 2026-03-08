@@ -134,7 +134,8 @@ export default function LoginScreen() {
             );
             console.log('Registration successful:', userCredential.user.uid);
             await createUserDocument(userCredential.user);
-            router.replace('/(tabs)/home');
+            // New accounts go to onboarding
+            router.replace('/onboarding');
         } catch (error) {
             console.log('Registration error:', error.code, error.message);
             setErrorMessage(getFriendlyError(error.code));
