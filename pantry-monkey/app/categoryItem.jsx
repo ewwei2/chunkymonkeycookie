@@ -17,7 +17,7 @@ import {
 
 // ...existing code...
 
-export default function CategoryItems({ route }) {
+export default function CategoryItems() {
 
     const [user, setUser] = useState(auth.currentUser);
 
@@ -92,7 +92,8 @@ export default function CategoryItems({ route }) {
         try {
             console.log("Creating item for user:", user.uid, newItem);
             const id = await addPantryItemToFirestore(user.uid, newItem);
-            console.log("Created item with id:", id);
+            console.log("USER UID:", user?.uid);
+            console.log("Saved item to Firestore");
             await loadItems();
         } catch (error) {
             console.error("Create error:", error);

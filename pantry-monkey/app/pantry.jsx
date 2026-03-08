@@ -1,13 +1,21 @@
 import { View, Text, TextInput, TouchableOpacity, FlatList, Modal, Alert, StyleSheet } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Picker } from '@react-native-picker/picker';
-import { Swipeable } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Ionicons } from '@expo/vector-icons';
-import { defaultSeasonal } from '../data/seasonalProduce';
 import { colors } from '../styles/global';
 import { useLocalSearchParams } from 'expo-router';
+import { auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import {
+  addPantryItem as addPantryItemToFirestore,
+  getPantryItems,
+  updatePantryItem as updatePantryItemInFirestore,
+  deletePantryItem as deletePantryItemFromFirestore,
+} from '../services/pantryService';
 
-export default function CategoryItems({ route }) {
+export default function CategoryItems() {
+
+    const [user, setUser] = useState(auth.currentUser);
 
     const { category: selectedCategory } = useLocalSearchParams();
 
@@ -28,34 +36,73 @@ export default function CategoryItems({ route }) {
     const [dateAdded, setDateAdded] = useState(new Date().toLocaleDateString('en-US'));
     const [expirationDate, setExpirationDate] = useState('');
     
+    // Listen for auth state changes
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            console.log("Auth state changed:", currentUser?.uid || "No user");
+            setUser(currentUser);
+        });
+        return unsubscribe;
+    }, []);
 
     useEffect(() => {
         setCategory(selectedCategory || '');
     }, [selectedCategory]);
 
+
     useEffect(() => {
-        loadItems();
-    }, [selectedCategory]);
+        if (user) {
+            loadItems();
+        }
+    }, [selectedCategory, user]);
 
     const loadItems = async () => {
-        // TODO: aidan - fetch items from Firestore for selectedCategory
+        if (!user) return;
+
+        try {
+            const pantryItems = await getPantryItems(user.uid);
+            const filtered = pantryItems.filter(
+                (item) => !selectedCategory || item.category === selectedCategory
+            );
+            setItems(filtered);
+        } catch (error) {
+            console.error("Load error:", error);
+            Alert.alert("Error", error.message);
+        }
     };
 
     const createItem = async (newItem) => {
-        // TODO: aidan - add item to Firestore
-        setItems((prev) => [...prev, newItem]);
+        if (!user) return;
+
+        try {
+            await addPantryItemToFirestore(user.uid, newItem);
+            await loadItems();
+        } catch (error) {
+            Alert.alert("Error", error.message);
+        }
     };
 
     const updateItem = async (updatedItem) => {
-    // TODO: aidan - update item in Firestore
-        setItems((prev) =>
-        prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
-        );
+        if (!user) return;
+
+        try {
+            const { id, ...updates } = updatedItem;
+            await updatePantryItemInFirestore(user.uid, id, updates);
+            await loadItems();
+        } catch (error) {
+            Alert.alert("Error", error.message);
+        }
     };
 
     const removeItem = async (id) => {
-        // TODO: aidan - delete item from Firestore
-        setItems((prev) => prev.filter((item) => item.id !== id));
+        if (!user) return;
+
+        try {
+            await deletePantryItemFromFirestore(user.uid, id);
+            await loadItems();
+        } catch (error) {
+            Alert.alert("Error", error.message);
+        }
     };
 
     const resetForm = () => {
