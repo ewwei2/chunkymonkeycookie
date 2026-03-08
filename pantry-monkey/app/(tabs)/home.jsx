@@ -1,4 +1,5 @@
-import { View, Text, TextInput, Pressable, ScrollView, Image, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, Image, StyleSheet, ActivityIndicator, Modal } from "react-native";
+// Remove: import { BlurView } from "expo-blur";
 import { useState, useEffect } from "react";
 import { router } from "expo-router";
 import { auth } from "../../firebase";
@@ -53,22 +54,13 @@ const getCurrentSeason = () => {
   return "Winter";
 };
 
-const getSeasonIcon = (season) => {
-  switch (season) {
-    case "Spring": return "🌸";
-    case "Summer": return "☀️";
-    case "Fall": return "🍂";
-    case "Winter": return "❄️";
-    default: return "🌸";
-  }
-};
-
 export default function HomeScreen() {
   const [user, setUser] = useState(auth.currentUser);
   const [search, setSearch] = useState("");
   const [favorites, setFavorites] = useState({});
   const [inSeasonRecipes, setInSeasonRecipes] = useState([]);
   const [loadingRecipes, setLoadingRecipes] = useState(true);
+  const [missionVisible, setMissionVisible] = useState(false);
   
   const currentSeason = getCurrentSeason();
   const season = seasonalProduce[currentSeason];
@@ -132,105 +124,149 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
+    <View style={styles.container}>
+      {/* Header with Greeting only */}
       <View style={styles.header}>
         <Text style={styles.greeting}>Hello, {getDisplayName()}!</Text>
-        <Text style={styles.subtitle}>What's cooking today?</Text>
       </View>
 
-      {/* Season Card */}
-      <View style={styles.seasonCard}>
-        <Text style={styles.seasonIcon}>{getSeasonIcon(currentSeason)}</Text>
-        <Text style={styles.seasonTitle}>{currentSeason} Season</Text>
-        <Text style={styles.seasonMonths}>{season.months}</Text>
-        <Text style={styles.seasonDescription}>{season.description}</Text>
-
-        {/* Seasonal Items Tags */}
-        <View style={styles.tagsContainer}>
-          {season.items.map((item, index) => (
-            <Pressable key={index} style={styles.tag}>
-              <Text style={styles.tagText}>{item}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={18} color="#999" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search recipes"
-          placeholderTextColor="#999"
-          value={search}
-          onChangeText={setSearch}
-        />
-        <Pressable style={styles.filterButton}>
-          <Ionicons name="options-outline" size={18} color="#666" />
-        </Pressable>
-      </View>
-
-      {/* Recipe Categories Grid */}
-      <View style={styles.categoriesGrid}>
-        {recipeCategories.map((category, index) => (
-          <Pressable 
-            key={index} 
-            style={styles.categoryCard}
-            onPress={() => handleCategoryPress(category)}
-          >
-            {category.image ? (
-              <Image source={category.image} style={styles.categoryImage} />
-            ) : (
-              <Text style={styles.categoryCardIcon}>{category.icon}</Text>
-            )}
-            <Text style={styles.categoryName}>{category.name}</Text>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ overflow: 'visible' }}>
+        {/* Season Card with overlapping Bookmark */}
+        <View style={styles.seasonCardWrapper}>
+          {/* Bookmark - positioned to overlap from top */}
+          <Pressable style={styles.bookmarkButton} onPress={() => setMissionVisible(true)}>
+            <Image 
+              source={require("../../assets/bookmark.png")} 
+              style={styles.bookmarkIcon}
+            />
           </Pressable>
-        ))}
-      </View>
-
-      {/* In-Season Recipes */}
-      <Text style={styles.sectionTitle}>In-Season Recipes</Text>
-      
-      {loadingRecipes ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#6C7C36" />
+          
+          {/* Season Card */}
+          <View style={styles.seasonCard}>
+            <Text style={styles.seasonTitle}>{currentSeason} Season</Text>
+            <Text style={styles.seasonMonths}>{season.months}</Text>
+            <Text style={styles.seasonDescription}>{season.description}</Text>
+          </View>
         </View>
-      ) : inSeasonRecipes && inSeasonRecipes.length > 0 ? (
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.recipesScroll}
-        >
-          {inSeasonRecipes.map((recipe) => (
-            <Pressable 
-              key={recipe.id} 
-              style={styles.recipeCard}
-              onPress={() => handleRecipePress(recipe)}
-            >
-              <Image source={{ uri: recipe.image }} style={styles.recipeImage} />
-              <Pressable
-                style={styles.favoriteButton}
-                onPress={() => toggleFavorite(recipe.id)}
-              >
-                <Ionicons
-                  name={favorites[recipe.id] ? "heart" : "heart-outline"}
-                  size={18}
-                  color={favorites[recipe.id] ? "#e74c3c" : "#fff"}
-                />
+
+        {/* Season Tags */}
+        <View style={styles.seasonTagsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {season.items.map((item, index) => (
+              <Pressable key={index} style={styles.seasonTag}>
+                <Text style={styles.seasonTagText}>{item}</Text>
               </Pressable>
-              <Text style={styles.recipeTitle} numberOfLines={2}>{recipe.title}</Text>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={18} color="#999" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search recipes"
+            placeholderTextColor="#999"
+            value={search}
+            onChangeText={setSearch}
+          />
+          <Pressable style={styles.filterButton}>
+            <Ionicons name="options-outline" size={18} color="#666" />
+          </Pressable>
+        </View>
+
+        {/* Recipe Categories Grid */}
+        <View style={styles.categoriesGrid}>
+          {recipeCategories.map((category, index) => (
+            <Pressable 
+              key={index} 
+              style={styles.categoryCard}
+              onPress={() => handleCategoryPress(category)}
+            >
+              {category.image ? (
+                <Image source={category.image} style={styles.categoryImage} />
+              ) : (
+                <Text style={styles.categoryCardIcon}>{category.icon}</Text>
+              )}
+              <Text style={styles.categoryName}>{category.name}</Text>
             </Pressable>
           ))}
-        </ScrollView>
-      ) : (
-        <View style={styles.emptyRecipes}>
-          <Text style={styles.emptyText}>No seasonal recipes available</Text>
         </View>
-      )}
 
-      <View style={{ height: 100 }} />
-    </ScrollView>
+        {/* In-Season Recipes */}
+        <Text style={styles.sectionTitle}>In-Season Recipes</Text>
+        
+        {loadingRecipes ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#6C7C36" />
+          </View>
+        ) : inSeasonRecipes && inSeasonRecipes.length > 0 ? (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.recipesScroll}
+          >
+            {inSeasonRecipes.map((recipe) => (
+              <Pressable 
+                key={recipe.id} 
+                style={styles.recipeCard}
+                onPress={() => handleRecipePress(recipe)}
+              >
+                <Image source={{ uri: recipe.image }} style={styles.recipeImage} />
+                <Pressable
+                  style={styles.favoriteButton}
+                  onPress={() => toggleFavorite(recipe.id)}
+                >
+                  <Ionicons
+                    name={favorites[recipe.id] ? "heart" : "heart-outline"}
+                    size={18}
+                    color={favorites[recipe.id] ? "#e74c3c" : "#fff"}
+                  />
+                </Pressable>
+                <Text style={styles.recipeTitle} numberOfLines={2}>{recipe.title}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyRecipes}>
+            <Text style={styles.emptyText}>No seasonal recipes available</Text>
+          </View>
+        )}
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* Mission Statement Modal with Blur */}
+      <Modal
+        visible={missionVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setMissionVisible(false)}
+      >
+        <View style={styles.blurContainer}>
+          <Pressable style={styles.modalOverlay} onPress={() => setMissionVisible(false)}>
+            <Pressable style={styles.missionCard} onPress={(e) => e.stopPropagation()}>
+              {/* Close button */}
+              <Pressable style={styles.closeButton} onPress={() => setMissionVisible(false)}>
+                <Ionicons name="close" size={24} color="#3A1E14" />
+              </Pressable>
+
+              <Text style={styles.missionTitle}>Our Mission Statement</Text>
+              <Text style={styles.missionSubtitle}>In season, in sync</Text>
+              
+              <Text style={styles.missionText}>
+                PantryMonkey was built for USF students, by USF students. This project a living pantry that celebrates what California grows, reminds you what needs to be eaten before it expires, and proves that the most sustainable meal is the one made from what you already have.
+              </Text>
+              
+              <Image 
+                source={require("../../assets/flower.png")} 
+                style={styles.missionImage}
+              />
+            </Pressable>
+          </Pressable>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
@@ -239,26 +275,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5F3EE",
   },
+  // Header
   header: {
-    paddingTop: 70,
-    paddingHorizontal: 24,
-    paddingBottom: 20,
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   greeting: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "700",
     color: "#3A1E14",
   },
-  subtitle: {
-    fontSize: 16,
-    color: "#888",
-    marginTop: 4,
+  // Season Card Wrapper - needs to allow overflow
+  seasonCardWrapper: {
+    marginHorizontal: 20,
+    marginTop: 40,
+    position: "relative",
   },
+  // Season Card
   seasonCard: {
     backgroundColor: "#fff",
-    marginHorizontal: 20,
     borderRadius: 20,
-    padding: 24,
+    padding: 20,
+    paddingRight: 60,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -266,9 +305,22 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  seasonIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+  // Bookmark - positioned absolutely on right, overlapping card
+  bookmarkButton: {
+    position: "absolute",
+    top: -139,
+    right: 16,
+    zIndex: 100,
+    elevation: 100,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+  },
+  bookmarkIcon: {
+    width: 70,
+    height: 150,
+    resizeMode: "contain",
   },
   seasonTitle: {
     fontSize: 22,
@@ -286,33 +338,31 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 12,
     lineHeight: 20,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
   },
-  tagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
+  // Season Tags
+  seasonTagsContainer: {
     marginTop: 16,
-    gap: 8,
+    paddingLeft: 20,
   },
-  tag: {
-    backgroundColor: "#F5F3EE",
+  seasonTag: {
+    backgroundColor: "#E8E6E1",
     paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E0DDD8",
+    marginRight: 8,
   },
-  tagText: {
+  seasonTagText: {
     fontSize: 13,
     color: "#555",
   },
+  // Search
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
     marginHorizontal: 20,
-    marginTop: 24,
+    marginTop: 20,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
@@ -333,6 +383,7 @@ const styles = StyleSheet.create({
   filterButton: {
     padding: 6,
   },
+  // Categories
   categoriesGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -368,6 +419,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
   },
+  // Section Title
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
@@ -376,6 +428,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 12,
   },
+  // Recipes
   loadingContainer: {
     height: 180,
     justifyContent: "center",
@@ -383,7 +436,6 @@ const styles = StyleSheet.create({
   },
   recipesScroll: {
     paddingHorizontal: 20,
-    gap: 12,
   },
   recipeCard: {
     width: 160,
@@ -424,5 +476,56 @@ const styles = StyleSheet.create({
   emptyText: {
     color: "#888",
     fontSize: 16,
+  },
+  // Mission Modal
+  blurContainer: {
+    flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.85)",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-start",
+    paddingTop: 100,
+  },
+  missionCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 20,
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    zIndex: 10,
+  },
+  missionTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#3A1E14",
+    marginBottom: 4,
+  },
+  missionSubtitle: {
+    fontSize: 14,
+    color: "#888",
+    fontStyle: "italic",
+    marginBottom: 16,
+  },
+  missionText: {
+    fontSize: 15,
+    color: "#555",
+    lineHeight: 24,
+  },
+  missionImage: {
+    width: 180,
+    height: 180,
+    resizeMode: "contain",
+    alignSelf: "center",
+    marginTop: 20,
   },
 });
