@@ -1,2 +1,5 @@
-import Pantry from "./pantry";
-export default Pantry;
+import { Redirect } from "expo-router";
+
+export default function Index() {
+  return <Redirect href="/login" />;
+}
