@@ -18,8 +18,10 @@ import { auth, db } from '../firebase';
 import { colors, fonts } from '../styles/global';
 
 export default function LoginScreen() {
+    const [isLogin, setIsLogin] = useState(true); // Toggle between login and register
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -28,7 +30,7 @@ export default function LoginScreen() {
             case 'auth/invalid-email':
                 return 'Please enter a valid email address.';
             case 'auth/user-not-found':
-                return 'No account found. Creating new account...';
+                return 'No account found with this email.';
             case 'auth/wrong-password':
             case 'auth/invalid-credential':
                 return 'Invalid email or password.';
@@ -63,7 +65,7 @@ export default function LoginScreen() {
         }
     };
 
-    const handleContinue = async () => {
+    const handleLogin = async () => {
         setErrorMessage('');
 
         if (!email.trim() || !password) {
@@ -81,7 +83,6 @@ export default function LoginScreen() {
         }
 
         try {
-            console.log('Trying signInWithEmailAndPassword...');
             const userCredential = await signInWithEmailAndPassword(
                 auth,
                 email.trim(),
@@ -90,30 +91,63 @@ export default function LoginScreen() {
             console.log('Sign in successful:', userCredential.user.uid);
             await createUserDocument(userCredential.user);
             router.replace('/(tabs)/home');
-        } catch (signInError) {
-            console.log('Sign in error:', signInError.code, signInError.message);
-
-            if (signInError.code === 'auth/user-not-found') {
-                try {
-                    console.log('User not found, creating account...');
-                    const userCredential = await createUserWithEmailAndPassword(
-                        auth,
-                        email.trim(),
-                        password
-                    );
-                    console.log('Account created:', userCredential.user.uid);
-                    await createUserDocument(userCredential.user);
-                    router.replace('/(tabs)/home');
-                } catch (signUpError) {
-                    console.log('Sign up error:', signUpError.code, signUpError.message);
-                    setErrorMessage(getFriendlyError(signUpError.code));
-                }
-            } else {
-                setErrorMessage(getFriendlyError(signInError.code));
-            }
+        } catch (error) {
+            console.log('Sign in error:', error.code, error.message);
+            setErrorMessage(getFriendlyError(error.code));
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleRegister = async () => {
+        setErrorMessage('');
+
+        if (!email.trim() || !password || !confirmPassword) {
+            setErrorMessage('Please fill in all fields.');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setErrorMessage('Passwords do not match.');
+            return;
+        }
+
+        if (password.length < 6) {
+            setErrorMessage('Password should be at least 6 characters.');
+            return;
+        }
+
+        setLoading(true);
+        console.log('Attempting registration with:', email.trim());
+
+        if (!auth) {
+            setErrorMessage('Firebase not initialized. Check your .env file.');
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(
+                auth,
+                email.trim(),
+                password
+            );
+            console.log('Registration successful:', userCredential.user.uid);
+            await createUserDocument(userCredential.user);
+            router.replace('/(tabs)/home');
+        } catch (error) {
+            console.log('Registration error:', error.code, error.message);
+            setErrorMessage(getFriendlyError(error.code));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const toggleMode = () => {
+        setIsLogin(!isLogin);
+        setErrorMessage('');
+        setPassword('');
+        setConfirmPassword('');
     };
 
     return (
@@ -122,9 +156,11 @@ export default function LoginScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <View style={styles.content}>
-                <Text style={styles.title}>Welcome</Text>
+                <Text style={styles.title}>{isLogin ? 'Welcome Back' : 'Create Account'}</Text>
                 <Text style={styles.subtitle}>
-                    Log in or create an account to save your pantry
+                    {isLogin 
+                        ? 'Sign in to access your pantry' 
+                        : 'Sign up to start tracking your pantry'}
                 </Text>
 
                 <TextInput
@@ -155,17 +191,43 @@ export default function LoginScreen() {
                     }}
                 />
 
+                {!isLogin && (
+                    <TextInput
+                        style={styles.input}
+                        placeholder='Confirm Password'
+                        placeholderTextColor='#8C8C8C'
+                        secureTextEntry
+                        autoCapitalize='none'
+                        autoCorrect={false}
+                        value={confirmPassword}
+                        onChangeText={(t) => {
+                            setConfirmPassword(t);
+                            setErrorMessage('');
+                        }}
+                    />
+                )}
+
                 {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+
+                {/* Toggle between Login and Register */}
+                <Pressable style={styles.toggleContainer} onPress={toggleMode}>
+                    <Text style={styles.toggleText}>
+                        {isLogin ? "Don't have an account? " : "Already have an account? "}
+                        <Text style={styles.toggleLink}>
+                            {isLogin ? 'Sign Up' : 'Sign In'}
+                        </Text>
+                    </Text>
+                </Pressable>
             </View>
 
             <View style={styles.bottomSection}>
                 <Pressable
                     style={[styles.button, loading && styles.buttonDisabled]}
-                    onPress={handleContinue}
+                    onPress={isLogin ? handleLogin : handleRegister}
                     disabled={loading}
                 >
                     <Text style={styles.buttonText}>
-                        {loading ? 'Loading...' : 'Continue'}
+                        {loading ? 'Loading...' : (isLogin ? 'Sign In' : 'Create Account')}
                     </Text>
                 </Pressable>
 
@@ -200,22 +262,22 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     content: {
-        paddingTop: 120,
+        paddingTop: 100,
         paddingHorizontal: 32,
     },
     title: {
-        fontSize: 40,
+        fontSize: 36,
         fontFamily: fonts.bold,
         textAlign: 'center',
         color: colors.text,
         marginBottom: 12,
     },
     subtitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontFamily: fonts.regular,
         textAlign: 'center',
         color: colors.secondary,
-        marginBottom: 60,
+        marginBottom: 40,
         lineHeight: 24,
     },
     input: {
@@ -226,13 +288,32 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: fonts.regular,
         color: colors.text,
-        marginBottom: 20,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     error: {
         color: '#B00020',
         fontFamily: fonts.regular,
         marginTop: 6,
+        marginBottom: 10,
         textAlign: 'center',
+    },
+    toggleContainer: {
+        marginTop: 20,
+        alignItems: 'center',
+    },
+    toggleText: {
+        fontSize: 15,
+        fontFamily: fonts.regular,
+        color: colors.textMuted || '#666',
+    },
+    toggleLink: {
+        color: '#677D32',
+        fontFamily: fonts.bold,
     },
     bottomSection: {
         marginBottom: 0,
@@ -247,7 +328,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: '#fff',
-        fontSize: 26,
+        fontSize: 24,
         fontFamily: fonts.bold,
     },
     devButton: {
