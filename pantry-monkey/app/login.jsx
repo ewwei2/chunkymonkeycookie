@@ -127,6 +127,23 @@ export default function LoginScreen() {
         ) : null}
       </View>
 
+        {/* DEV BUTTON */}
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/categoryItem",
+              params: { category: "Fruits" },
+            })
+          }
+        >
+          <Text>Skip Login → Fruits</Text>
+        </Pressable>
+      
+      {/* DEV BUTTON */}
+      <Pressable onPress={() => router.push("/pantry")}>
+        <Text>Skip Login → Pantry</Text>
+      </Pressable>
+
       <Pressable
         style={[styles.button, loading && { opacity: 0.6 }]}
         onPress={handleContinue}
