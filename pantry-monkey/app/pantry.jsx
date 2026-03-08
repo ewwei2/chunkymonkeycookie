@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Pressable, TouchableOpacity, Image, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, Image, StyleSheet, ScrollView } from 'react-native';
 import { router } from "expo-router";
 import { colors } from '../styles/global';
 import { useState } from 'react';

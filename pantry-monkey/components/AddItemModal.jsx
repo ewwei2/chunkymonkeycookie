@@ -1,7 +1,11 @@
-import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Picker } from '@react-native-picker/picker';
 import { colors } from '../styles/global';
+import { auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { addPantryItem as addPantryItemToFirestore } from '../services/pantryService';
+
 
 export default function AddItemModal({ visible, onClose, onAdd, defaultCategory = '' }) {
 
@@ -12,6 +16,15 @@ export default function AddItemModal({ visible, onClose, onAdd, defaultCategory 
     const [storageLocation, setStorageLocation] = useState('');
     const [dateAdded, setDateAdded] = useState(new Date().toLocaleDateString('en-US'));
     const [expirationDate, setExpirationDate] = useState('');
+
+    const [user, setUser] = useState(auth.currentUser);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+        });
+        return unsubscribe;
+    }, []);
 
     // auto-fill category when opened from a category screen
     useEffect(() => {
@@ -32,25 +45,30 @@ export default function AddItemModal({ visible, onClose, onAdd, defaultCategory 
         return base.toLocaleDateString('en-US');
     };
 
-    const handleAdd = () => {
-        if (!name) return;
+    const handleAdd = async () => {
+        if (!name.trim()) return;
+        if (!user) return;
+
         const newItem = {
-            id: Date.now().toString(),
             name, category, quantity, unit, storageLocation,
             dateAdded: new Date().toLocaleDateString('en-US'),
             expirationDate: expirationDate || estimateExpiration(category, name),
             autoEstimated: !expirationDate,
         };
-        onAdd(newItem);
-        // reset form
-        setName('');
-        setCategory(defaultCategory);
-        setQuantity('');
-        setUnit('');
-        setStorageLocation('');
-        setExpirationDate('');
-        setDateAdded(new Date().toLocaleDateString('en-US'));
-        onClose();
+
+        try {
+            await addPantryItemToFirestore(user.uid, newItem);
+            onAdd?.(newItem);
+            setName('');
+            setCategory(defaultCategory);
+            setQuantity('');
+            setUnit('');
+            setStorageLocation('');
+            setExpirationDate('');
+            onClose();
+        } catch (error) {
+            Alert.alert('Error', error.message);
+        }
     };
 
     return (

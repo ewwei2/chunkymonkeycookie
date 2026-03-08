@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, FlatList, Modal, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Modal, Alert, StyleSheet, Pressable } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Picker } from '@react-native-picker/picker';
 import { Swipeable } from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -14,7 +14,8 @@ import {
   updatePantryItem as updatePantryItemInFirestore,
   deletePantryItem as deletePantryItemFromFirestore,
 } from '../services/pantryService';
-
+import AddItemModal from '../components/AddItemModal';
+import { router } from 'expo-router';
 // ...existing code...
 
 export default function CategoryItems() {
@@ -39,6 +40,9 @@ export default function CategoryItems() {
     const [storageLocation, setStorageLocation] = useState('');
     const [dateAdded, setDateAdded] = useState(new Date().toLocaleDateString('en-US'));
     const [expirationDate, setExpirationDate] = useState('');
+
+    // modal
+    const [addModalVisible, setAddModalVisible] = useState(false);
     
     // Listen for auth state changes
     useEffect(() => {
@@ -48,8 +52,6 @@ export default function CategoryItems() {
         });
         return unsubscribe;
     }, []);
-
-
 
     useEffect(() => {
         setCategory(selectedCategory || '');
@@ -136,21 +138,20 @@ export default function CategoryItems() {
     };
 
     const openAddModal = () => {
-    resetForm();
-    setModalVisible(true);
-  };
+        setAddModalVisible(true);
+    };
 
-  const openEditModal = (item) => {
-    setName(item.name || '');
-    setCategory(item.category || selectedCategory || '');
-    setQuantity(item.quantity || '');
-    setUnit(item.unit || '');
-    setStorageLocation(item.storageLocation || '');
-    setDateAdded(item.dateAdded || '');
-    setExpirationDate(item.expirationDate || '');
-    setEditingID(item.id);
-    setModalVisible(true);
-  };
+    const openEditModal = (item) => {
+        setName(item.name || '');
+        setCategory(item.category || selectedCategory || '');
+        setQuantity(item.quantity || '');
+        setUnit(item.unit || '');
+        setStorageLocation(item.storageLocation || '');
+        setDateAdded(item.dateAdded || '');
+        setExpirationDate(item.expirationDate || '');
+        setEditingID(item.id);
+        setModalVisible(true);
+    };
 
     const saveItem = async () => {
     if (!name.trim()) {
@@ -186,20 +187,26 @@ export default function CategoryItems() {
 
     return (
         <View style={styles.container}>
-      <Text style={styles.title}>{selectedCategory || "Pantry"}</Text>
+            <View style={styles.header}>
+            <Pressable style={styles.backButton} onPress={() => router.back()}>
+                <Ionicons name='arrow-back' size={28} color={colors.text} />
+            </Pressable>
+            <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>{selectedCategory || 'Pantry'}</Text>
+            <View style={styles.headerSpace} />
+        </View>
 
-      <View style={styles.searchRow}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search for ingredients"
-          placeholderTextColor="#5F5F5F"
-          value={search}
-          onChangeText={setSearch}
-        />
-        <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.searchRow}>
+            <TextInput
+                style={styles.searchInput}
+                placeholder="Add, search for ingredients"
+                placeholderTextColor="#5F5F5F"
+                value={search}
+                onChangeText={setSearch}
+            />
+            <Pressable style={styles.addButton} onPress={openAddModal}>
+                <Text style={styles.addButtonText}>+</Text>
+            </Pressable>
+        </View>
 
       <FlatList
         data={filteredItems}
@@ -231,7 +238,14 @@ export default function CategoryItems() {
         ListEmptyComponent={
             <Text style={styles.emptyText}>No items yet — tap + to add something!</Text>
         }
-/>
+    />
+
+        <AddItemModal
+          visible={addModalVisible}
+          onClose={() => setAddModalVisible(false)}
+          onAdd={() => loadItems()}
+          defaultCategory={selectedCategory}
+        />
 
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.overlay}>
@@ -322,125 +336,129 @@ const styles = StyleSheet.create({
     container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 20,
+    },
+
+    header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    marginBottom: 32,
+    paddingHorizontal: 20,
+    },
+    
+    backButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 26,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 4,
+        marginRight: 42,
+    },
+    headerSpace: {
+        width: 52,
     },
     title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 16,
-    textAlign: "center",
-    marginTop: 16,
+        flex: 1,
+        fontSize: 28,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        color: colors.text,
     },
     searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    gap: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        gap: 15,
+        width: 324,
+        height: 40,
+        alignSelf: 'center',
     },
     searchInput: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 24,
-    padding: 10,
-    paddingLeft: 16,
-    height: 40,
-    fontSize: 12,
+        flex: 1,
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 10,
+        paddingLeft: 16,
+        height: 40,
+        fontSize: 12,
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 4,
     },
     addButton: {
-    backgroundColor: "#fff",
-    borderRadius: 22,
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
+        backgroundColor: '#fff',
+        borderRadius: 22,
+        width: 40,
+        height: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 4,
     },
+
     addButtonText: {
-    fontSize: 24,
-    color: "#333",
+        fontSize: 24,
+        color: colors.text,
     },
+    
     emptyText: {
     textAlign: "center",
     color: "#aaa",
     marginTop: 40,
     },
-    overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    },
-    modalBox: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 24,
-    width: "90%",
-    },
-    modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 16,
-    },
-    label: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#555",
-    marginBottom: 4,
-    },
+
     input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 10,
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 10,
     },
-    picker: {
-    marginBottom: 10,
-    },
-    submitButton: {
-    backgroundColor: "#4CAF50",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 10,
-    },
-    submitButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    },
-    cancelText: {
-    textAlign: "center",
-    color: "#aaa",
-    marginTop: 4,
-    },
+    
     itemCard: {
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
-    backgroundColor: "#fff",
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 10,
+        backgroundColor: "#fff",
     },
     itemName: {
-    fontSize: 16,
-    fontWeight: "bold",
+        fontSize: 16,
+        fontWeight: "bold",
     },
+
     itemDetail: {
-    fontSize: 12,
-    color: "#888",
-    marginTop: 2,
+        fontSize: 12,
+        color: "#888",
+        marginTop: 2,
     },
+
     editAction: {
-    backgroundColor: "#888",
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
+        backgroundColor: "#888",
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: "center",
+        alignItems: "center",
     },
+
     deleteAction: {
-    backgroundColor: "#888",
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
+        backgroundColor: "#888",
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: "center",
+        alignItems: "center",
     },
 });
