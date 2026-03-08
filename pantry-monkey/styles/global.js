@@ -10,4 +10,5 @@ export const colors = {
 export const fonts = {
     regular: 'Helvetica',
     bold: 'Helvetica-Bold',
+    head: 'Header',
 };

@@ -152,7 +152,6 @@ export default function AddItemModal({ visible, onClose, onAdd, defaultCategory 
                             value={category}
                             placeholder={{ label: 'Select a category...', value: '' }}
                             doneText='Done'
-                            darkTheme={false}
                             useNativeAndroidPickerStyle={false}
                             items={[
                                 { label: 'Grains (bread, pasta, rice)', value: 'Grains' },
@@ -177,7 +176,6 @@ export default function AddItemModal({ visible, onClose, onAdd, defaultCategory 
                             value={storageLocation}
                             placeholder={{ label: 'Select storage location...', value: '' }}
                             doneText='Done'
-                            darkTheme={false}
                             useNativeAndroidPickerStyle={false}
                             items={[
                                 { label: 'Dry Pantry', value: 'Dry Pantry' },
@@ -189,7 +187,9 @@ export default function AddItemModal({ visible, onClose, onAdd, defaultCategory 
                         />
 
                         {storageLocation === 'Freezer' && (
-                            <Text style={styles.hint}>💡 If meat is in the freezer, classify as frozen</Text>
+                            <Text style={styles.hint}>
+                                💡 If meat is in the freezer, classify as frozen
+                            </Text>
                         )}
 
                         <Text style={styles.label}>Quantity</Text>
@@ -260,7 +260,6 @@ const pickerStyles = {
         color: '#1f1f1f',
         backgroundColor: '#f3f3f3',
         fontFamily: fonts.regular,
-        fontSize: 14,
     },
     inputAndroid: {
         borderWidth: 1,
@@ -273,7 +272,6 @@ const pickerStyles = {
         color: '#1f1f1f',
         backgroundColor: '#f3f3f3',
         fontFamily: fonts.regular,
-        fontSize: 14,
     },
     placeholder: {
         color: '#7a7a7a',
@@ -282,19 +280,6 @@ const pickerStyles = {
     iconContainer: {
         top: 14,
         right: 12,
-    },
-    modalViewTop: {
-        backgroundColor: '#ffffff',
-    },
-    modalViewMiddle: {
-        backgroundColor: '#ffffff',
-    },
-    modalViewBottom: {
-        backgroundColor: '#ffffff',
-    },
-    done: {
-        color: colors.green,
-        fontFamily: fonts.bold,
     },
 };
 
