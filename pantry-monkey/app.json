@@ -1,5 +1,9 @@
 {
-  "plugins": [
+  "expo": {
+    "backgroundColor": "#F1EFEB",
+    "plugins": [
     "expo-asset"
   ]
+  }
+  
 }

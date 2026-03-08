@@ -1,19 +1,18 @@
+// data/seasonalProduce.js
+
 export const seasonalProduce = {
-  'California': {
-    1:  ['citrus', 'kale', 'broccoli', 'leeks'],
-    2:  ['citrus', 'kale', 'brussels sprouts'],
-    3:  ['artichokes', 'asparagus', 'peas', 'spinach'],
-    4:  ['artichokes', 'strawberries', 'lettuce'],
-    5:  ['strawberries', 'cherries', 'zucchini'],
-    6:  ['tomatoes', 'corn', 'peaches', 'berries'],
-    7:  ['tomatoes', 'corn', 'peppers', 'melons'],
-    8:  ['tomatoes', 'figs', 'peppers', 'eggplant'],
-    9:  ['apples', 'grapes', 'winter squash'],
-    10: ['apples', 'pears', 'sweet potatoes'],
-    11: ['pomegranates', 'persimmons', 'cauliflower'],
-    12: ['citrus', 'kale', 'brussels sprouts'],
-  },
-  // add more states later
+    1:  ['citrus', 'kale', 'cabbage', 'pear'],
+    2:  ['citrus', 'kale', 'cabbage', 'broccoli'],
+    3:  ['asparagus', 'spinach', 'strawberry', 'pea'],
+    4:  ['asparagus', 'spinach', 'strawberry', 'radish'],
+    5:  ['strawberry', 'asparagus', 'pea', 'lettuce'],
+    6:  ['blueberry', 'peach', 'tomato', 'zucchini', 'corn'],
+    7:  ['blueberry', 'peach', 'tomato', 'watermelon', 'corn'],
+    8:  ['tomato', 'peach', 'corn', 'watermelon', 'pepper'],
+    9:  ['apple', 'pear', 'squash', 'sweet potato'],
+    10: ['apple', 'pear', 'squash', 'pumpkin', 'cranberry'],
+    11: ['cranberry', 'sweet potato', 'kale', 'pumpkin'],
+    12: ['citrus', 'kale', 'pear', 'cranberry'],
 };
 
-export const defaultSeasonal = seasonalProduce['California'];
+export const defaultSeasonal = seasonalProduce;
