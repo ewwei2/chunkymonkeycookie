@@ -54,6 +54,14 @@ const getCurrentSeason = () => {
   return "Winter";
 };
 
+// Mock data for when API is exhausted
+const mockInSeasonRecipes = [
+  { id: 1, title: "Strawberry Spinach Salad", image: "https://spoonacular.com/recipeImages/715495-312x231.jpg" },
+  { id: 2, title: "Asparagus Risotto", image: "https://spoonacular.com/recipeImages/716429-312x231.jpg" },
+  { id: 3, title: "Spring Vegetable Pasta", image: "https://spoonacular.com/recipeImages/715497-312x231.jpg" },
+  { id: 4, title: "Fresh Berry Smoothie", image: "https://spoonacular.com/recipeImages/715415-312x231.jpg" },
+];
+
 export default function HomeScreen() {
   const [user, setUser] = useState(auth.currentUser);
   const [search, setSearch] = useState("");
@@ -81,16 +89,16 @@ export default function HomeScreen() {
       );
       const data = await response.json();
       
-      // Make sure data is an array before setting
       if (Array.isArray(data)) {
         setInSeasonRecipes(data);
       } else {
-        console.log("API response:", data);
-        setInSeasonRecipes([]);
+        // API limit reached - use mock data
+        console.log("API limit reached, using mock data");
+        setInSeasonRecipes(mockInSeasonRecipes);
       }
     } catch (error) {
       console.error("Error fetching in-season recipes:", error);
-      setInSeasonRecipes([]);
+      setInSeasonRecipes(mockInSeasonRecipes);
     } finally {
       setLoadingRecipes(false);
     }
