@@ -78,7 +78,8 @@ export default function LoginScreen() {
       // Create/verify user document exists
       await createUserDocument(userCredential.user);
 
-      router.replace("/pantry");
+      // After successful login:
+      router.replace("/(tabs)/home");
     } catch (error) {
       setErrorMessage(getFriendlyError(error.code));
     } finally {

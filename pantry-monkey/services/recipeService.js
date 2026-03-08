@@ -17,10 +17,10 @@ export async function getRecipesByIngredients(ingredients, number = 10) {
   return response.json();
 }
 
-// Get detailed recipe information
+// Get detailed recipe information with nutrition
 export async function getRecipeDetails(recipeId) {
   const response = await fetch(
-    `https://api.spoonacular.com/recipes/${recipeId}/information?includeNutrition=false&apiKey=${SPOONACULAR_API_KEY}`
+    `https://api.spoonacular.com/recipes/${recipeId}/information?includeNutrition=true&apiKey=${SPOONACULAR_API_KEY}`
   );
   
   if (!response.ok) {
@@ -38,7 +38,6 @@ export async function getRecipesForUser(uid) {
     return [];
   }
   
-  // Extract ingredient names from pantry
   const ingredients = pantryItems.map((item) => item.name);
   
   return getRecipesByIngredients(ingredients);
@@ -52,12 +51,10 @@ export async function getRecipesForExpiringItems(uid) {
     return [];
   }
   
-  // Sort by expiration date (soonest first)
   const sorted = pantryItems
     .filter((item) => item.expirationDate)
     .sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate));
   
-  // Prioritize items expiring within 7 days
   const expiringSoon = sorted
     .filter((item) => {
       const daysUntilExpiry = Math.ceil(
@@ -68,7 +65,6 @@ export async function getRecipesForExpiringItems(uid) {
     .map((item) => item.name);
   
   if (expiringSoon.length === 0) {
-    // Fall back to all ingredients
     return getRecipesByIngredients(pantryItems.map((item) => item.name));
   }
   
