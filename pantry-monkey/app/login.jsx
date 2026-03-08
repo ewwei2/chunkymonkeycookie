@@ -7,6 +7,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import {
@@ -28,60 +29,93 @@ export default function LoginScreen() {
       case "auth/invalid-email":
         return "Please enter a valid email address.";
       case "auth/user-not-found":
+        return "No account found. Creating new account...";
       case "auth/wrong-password":
       case "auth/invalid-credential":
         return "Invalid email or password.";
       case "auth/email-already-in-use":
-        return "This email is already registered.";
+        return "This email is already registered. Try signing in.";
       case "auth/weak-password":
         return "Password should be at least 6 characters.";
+      case "auth/network-request-failed":
+        return "Network error. Please check your internet connection.";
       default:
-        return "Something went wrong.";
+        return `Error: ${code}`;
     }
   };
 
   const createUserDocument = async (user) => {
-    const userRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userRef);
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
 
-    // Only create if it doesn't exist
-    if (!userSnap.exists()) {
-      await setDoc(userRef, {
-        email: user.email,
-        displayName: "",
-        photoURL: "",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          email: user.email,
+          displayName: "",
+          photoURL: "",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        console.log("Created user document");
+      }
+    } catch (error) {
+      console.log("Error creating user doc (non-fatal):", error);
+      // Don't throw - this is non-fatal, user can still use the app
     }
   };
 
   const handleContinue = async () => {
     setErrorMessage("");
 
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       setErrorMessage("Please enter email and password.");
       return;
     }
 
+    setLoading(true);
+    console.log("Attempting login with:", email.trim());
+
+    // Check if auth is initialized
+    if (!auth) {
+      setErrorMessage("Firebase not initialized. Check your .env file.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      setLoading(true);
-
-      let userCredential;
-      try {
-        // Try to sign in first
-        userCredential = await signInWithEmailAndPassword(auth, email, password);
-      } catch (signInError) {
-        // If sign in fails, create a new account
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      }
-
-      // Create/verify user document exists
+      // Try to sign in first
+      console.log("Trying signInWithEmailAndPassword...");
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password
+      );
+      console.log("Sign in successful:", userCredential.user.uid);
       await createUserDocument(userCredential.user);
+      router.replace("/(tabs)/home");
+    } catch (signInError) {
+      console.log("Sign in error:", signInError.code, signInError.message);
 
-      router.replace("/pantry");
-    } catch (error) {
-      setErrorMessage(getFriendlyError(error.code));
+      // Only try to create account if user doesn't exist
+      if (signInError.code === "auth/user-not-found") {
+        try {
+          console.log("User not found, creating account...");
+          const userCredential = await createUserWithEmailAndPassword(
+            auth,
+            email.trim(),
+            password
+          );
+          console.log("Account created:", userCredential.user.uid);
+          await createUserDocument(userCredential.user);
+          router.replace("/(tabs)/home");
+        } catch (signUpError) {
+          console.log("Sign up error:", signUpError.code, signUpError.message);
+          setErrorMessage(getFriendlyError(signUpError.code));
+        }
+      } else {
+        setErrorMessage(getFriendlyError(signInError.code));
+      }
     } finally {
       setLoading(false);
     }
@@ -104,6 +138,7 @@ export default function LoginScreen() {
           placeholderTextColor="#8C8C8C"
           autoCapitalize="none"
           keyboardType="email-address"
+          autoCorrect={false}
           value={email}
           onChangeText={(t) => {
             setEmail(t);
@@ -116,6 +151,8 @@ export default function LoginScreen() {
           placeholder="Password"
           placeholderTextColor="#8C8C8C"
           secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
           value={password}
           onChangeText={(t) => {
             setPassword(t);
@@ -128,16 +165,15 @@ export default function LoginScreen() {
         ) : null}
       </View>
 
-        {/* DEV BUTTON */}
+      <View style={styles.bottomSection}>
         <Pressable
-          onPress={() =>
-            router.push({
-              pathname: "/categoryItem",
-              params: { category: "Fruits" },
-            })
-          }
+          style={[styles.button, loading && { opacity: 0.6 }]}
+          onPress={handleContinue}
+          disabled={loading}
         >
-          <Text>Skip Login → Fruits</Text>
+          <Text style={styles.buttonText}>
+            {loading ? "Loading..." : "Continue"}
+          </Text>
         </Pressable>
       
       {/* DEV BUTTON */}
@@ -205,8 +241,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
     textAlign: "center",
   },
+  bottomSection: {
+    marginBottom: 0,
+  },
   button: {
-    backgroundColor: colors.green,
+    backgroundColor: "#677D32",
     paddingVertical: 22,
     alignItems: "center",
   },

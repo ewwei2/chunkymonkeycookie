@@ -1,464 +1,361 @@
-import { View, Text, TextInput, TouchableOpacity, FlatList, Modal, Alert, StyleSheet, Pressable } from 'react-native';
-import { useEffect, useState } from 'react';
-import { Picker } from '@react-native-picker/picker';
-import { Swipeable } from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, Modal } from 'react-native';
+import { useLocalSearchParams, router } from "expo-router";
+import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { defaultSeasonal } from '../data/seasonalProduce';
-import { colors, fonts } from '../styles/global';
-import { useLocalSearchParams } from 'expo-router';
-import { auth } from '../firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import {
-  addPantryItem as addPantryItemToFirestore,
-  getPantryItems,
-  updatePantryItem as updatePantryItemInFirestore,
-  deletePantryItem as deletePantryItemFromFirestore,
-} from '../services/pantryService';
-import AddItemModal from '../components/AddItemModal';
-import { router } from 'expo-router';
-// ...existing code...
+import { auth, db } from "../firebase";
+import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
 
 export default function CategoryItems() {
-
-    const [user, setUser] = useState(auth.currentUser);
-
-    const { category: selectedCategory } = useLocalSearchParams();
-
-    // data state
+    const { category } = useLocalSearchParams();
     const [items, setItems] = useState([]);
-
-    // ui state
+    const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
-    const [editingID, setEditingID] = useState(null);
-    const [search, setSearch] = useState('');
-
-    // form state
-    const [name, setName] = useState('');
-    const [category, setCategory] = useState(selectedCategory || '');
-    const [quantity, setQuantity] = useState('');
-    const [unit, setUnit] = useState('');
-    const [storageLocation, setStorageLocation] = useState('');
-    const [dateAdded, setDateAdded] = useState(new Date().toLocaleDateString('en-US'));
-    const [expirationDate, setExpirationDate] = useState('');
-
-    // modal
-    const [addModalVisible, setAddModalVisible] = useState(false);
-    
-    // Listen for auth state changes
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            console.log("Auth state changed:", currentUser?.uid || "No user");
-            setUser(currentUser);
-        });
-        return unsubscribe;
-    }, []);
+    const [newItem, setNewItem] = useState({
+        name: '',
+        quantity: '',
+        unit: '',
+        storageLocation: '',
+        expirationDate: '',
+    });
 
     useEffect(() => {
-        setCategory(selectedCategory || '');
-    }, [selectedCategory]);
-
-     useEffect(() => {
-        if (user) {
-            loadItems();
-        }
-    }, [selectedCategory, user]);
+        loadItems();
+    }, [category]);
 
     const loadItems = async () => {
-        if (!user) {
-            console.log("No user, skipping load");
+        if (!auth.currentUser) return;
+        
+        try {
+            const pantryRef = collection(db, "users", auth.currentUser.uid, "pantry");
+            const q = query(pantryRef, where("category", "==", category));
+            const snapshot = await getDocs(q);
+            
+            const itemsList = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            setItems(itemsList);
+        } catch (error) {
+            console.error("Error loading items:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAddItem = async () => {
+        if (!newItem.name.trim()) {
+            Alert.alert("Error", "Please enter an item name");
             return;
         }
 
-        try {
-            console.log("Loading items for user:", user.uid);
-            const pantryItems = await getPantryItems(user.uid);
-            console.log("Fetched items:", pantryItems);
-
-            const categoryItems = pantryItems.filter(
-                (item) => !selectedCategory || item.category === selectedCategory
-            );
-
-            setItems(categoryItems);
-        } catch (error) {
-            console.error("Load error:", error);
-            Alert.alert("Error", error.message);
-        }
-    };
-
-    const createItem = async (newItem) => {
-        if (!user) {
-            console.log("No user, cannot create item");
-            return;
-        }
+        if (!auth.currentUser) return;
 
         try {
-            console.log("Creating item for user:", user.uid, newItem);
-            const id = await addPantryItemToFirestore(user.uid, newItem);
-            console.log("USER UID:", user?.uid);
-            console.log("Saved item to Firestore");
-            await loadItems();
+            const pantryRef = collection(db, "users", auth.currentUser.uid, "pantry");
+            await addDoc(pantryRef, {
+                ...newItem,
+                category: category,
+                dateAdded: new Date().toLocaleDateString("en-US"),
+                createdAt: serverTimestamp(),
+            });
+            
+            setNewItem({ name: '', quantity: '', unit: '', storageLocation: '', expirationDate: '' });
+            setModalVisible(false);
+            loadItems();
         } catch (error) {
-            console.error("Create error:", error);
-            Alert.alert("Error", error.message);
+            console.error("Error adding item:", error);
+            Alert.alert("Error", "Failed to add item");
         }
     };
 
-    const updateItem = async (updatedItem) => {
-    if (!user) return;
-
-    try {
-        const { id, ...updates } = updatedItem;
-        await updatePantryItemInFirestore(user.uid, id, updates);
-        await loadItems();
-    } catch (error) {
-        Alert.alert("Error", error.message);
-    }
+    const handleDeleteItem = async (itemId) => {
+        Alert.alert(
+            "Delete Item",
+            "Are you sure you want to remove this item?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await deleteDoc(doc(db, "users", auth.currentUser.uid, "pantry", itemId));
+                            loadItems();
+                        } catch (error) {
+                            console.error("Error deleting item:", error);
+                        }
+                    }
+                }
+            ]
+        );
     };
-
-    const removeItem = async (id) => {
-    if (!user) return;
-
-    try {
-        await deletePantryItemFromFirestore(user.uid, id);
-        await loadItems();
-    } catch (error) {
-        Alert.alert("Error", error.message);
-    }
-    };
-
-    const resetForm = () => {
-        setName('');
-        setCategory(selectedCategory || '');
-        setQuantity('');
-        setUnit('');
-        setStorageLocation('');
-        setDateAdded(new Date().toLocaleDateString('en-US'));
-        setExpirationDate('');
-        setEditingID(null);
-    };
-
-    const openAddModal = () => {
-        setAddModalVisible(true);
-    };
-
-    const openEditModal = (item) => {
-        setName(item.name || '');
-        setCategory(item.category || selectedCategory || '');
-        setQuantity(item.quantity || '');
-        setUnit(item.unit || '');
-        setStorageLocation(item.storageLocation || '');
-        setDateAdded(item.dateAdded || '');
-        setExpirationDate(item.expirationDate || '');
-        setEditingID(item.id);
-        setModalVisible(true);
-    };
-
-    const saveItem = async () => {
-    if (!name.trim()) {
-        Alert.alert('Missing info', 'Please enter an item name.');
-        return;
-    }
-
-    const itemPayload = {
-        name,
-        category,
-        quantity,
-        unit,
-        storageLocation,
-        dateAdded,
-        expirationDate,
-    };
-
-    if (editingID) {
-        await updateItem({ id: editingID, ...itemPayload });
-    } else {
-        await createItem(itemPayload);
-    }
-
-    setModalVisible(false);
-    resetForm();
-    };  
-
-    const filteredItems = items.filter(
-    (item) =>
-      (!selectedCategory || item.category === selectedCategory) &&
-      item.name.toLowerCase().includes(search.toLowerCase())
-    );
 
     return (
         <View style={styles.container}>
+            {/* Header */}
             <View style={styles.header}>
-            <Pressable style={styles.backButton} onPress={() => router.back()}>
-                <Ionicons name='arrow-back' size={28} color={colors.text} />
-            </Pressable>
-            <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4}>{selectedCategory || 'Pantry'}</Text>
-            <View style={styles.headerSpace} />
-        </View>
-
-        <View style={styles.searchRow}>
-            <TextInput
-                style={styles.searchInput}
-                placeholder="Add, search for ingredients"
-                placeholderTextColor="#5F5F5F"
-                value={search}
-                onChangeText={setSearch}
-            />
-            <Pressable style={styles.addButton} onPress={openAddModal}>
-                <Text style={styles.addButtonText}>+</Text>
-            </Pressable>
-        </View>
-
-      <FlatList
-        data={filteredItems}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-            <View style={styles.itemCard}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <View style={{ flex: 1 }}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemDetail}>
-                    {item.quantity} {item.unit}
-                </Text>
-                <Text style={styles.itemDetail}>{item.storageLocation}</Text>
-                <Text style={styles.itemDetail}>Exp. {item.expirationDate}</Text>
-                </View>
-
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                <TouchableOpacity style={styles.editAction} onPress={() => openEditModal(item)}>
-                    <Ionicons name="pencil" size={20} color="#fff" />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.deleteAction} onPress={() => removeItem(item.id)}>
-                    <Ionicons name="trash" size={20} color="#fff" />
-                </TouchableOpacity>
-                </View>
+                <Pressable style={styles.backButton} onPress={() => router.back()}>
+                    <Ionicons name="chevron-back" size={24} color="#3A1E14" />
+                </Pressable>
+                <Text style={styles.title}>{category}</Text>
+                <Pressable style={styles.addButton} onPress={() => setModalVisible(true)}>
+                    <Ionicons name="add" size={24} color="#3A1E14" />
+                </Pressable>
             </View>
-            </View>
-        )}
-        ListEmptyComponent={
-            <Text style={styles.emptyText}>No items yet — tap + to add something!</Text>
-        }
-    />
 
-        <AddItemModal
-          visible={addModalVisible}
-          onClose={() => setAddModalVisible(false)}
-          onAdd={() => loadItems()}
-          defaultCategory={selectedCategory}
-        />
+            {/* Items List */}
+            <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+                {loading ? (
+                    <Text style={styles.loadingText}>Loading...</Text>
+                ) : items.length === 0 ? (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="basket-outline" size={64} color="#ccc" />
+                        <Text style={styles.emptyTitle}>No items yet</Text>
+                        <Text style={styles.emptySubtitle}>Tap + to add your first {category?.toLowerCase()} item</Text>
+                    </View>
+                ) : (
+                    items.map((item) => (
+                        <View key={item.id} style={styles.itemCard}>
+                            <View style={styles.itemInfo}>
+                                <Text style={styles.itemName}>{item.name}</Text>
+                                {item.quantity && (
+                                    <Text style={styles.itemDetails}>
+                                        {item.quantity} {item.unit}
+                                    </Text>
+                                )}
+                                {item.expirationDate && (
+                                    <Text style={styles.itemExpiry}>Expires: {item.expirationDate}</Text>
+                                )}
+                            </View>
+                            <Pressable onPress={() => handleDeleteItem(item.id)}>
+                                <Ionicons name="trash-outline" size={20} color="#e74c3c" />
+                            </Pressable>
+                        </View>
+                    ))
+                )}
+                <View style={{ height: 100 }} />
+            </ScrollView>
 
-      <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={styles.overlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>
-              {editingID ? "Edit Item" : "Add Item"}
-            </Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Item name"
-              value={name}
-              onChangeText={setName}
-            />
-
-            <Text style={styles.label}>Category</Text>
-            <Picker selectedValue={category} onValueChange={setCategory} style={styles.picker}>
-              <Picker.Item label="Select a category..." value="" />
-              <Picker.Item label="Grains" value="Grains" />
-              <Picker.Item label="Eggs & Dairy" value="Eggs & Dairy" />
-              <Picker.Item label="Seafood" value="Seafood" />
-              <Picker.Item label="Fruits" value="Fruits" />
-              <Picker.Item label="Vegetables" value="Vegetables" />
-              <Picker.Item label="Drinks" value="Drinks" />
-              <Picker.Item label="Meats" value="Meats" />
-              <Picker.Item label="Snacks & Sweets" value="Snacks & Sweets" />
-              <Picker.Item label="Frozen" value="Frozen" />
-              <Picker.Item label="Other" value="Other" />
-            </Picker>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Quantity"
-              value={quantity}
-              onChangeText={setQuantity}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Unit (lbs, oz, dozen...)"
-              value={unit}
-              onChangeText={setUnit}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Storage Location"
-              value={storageLocation}
-              onChangeText={setStorageLocation}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Date added (MM/DD/YYYY)"
-              value={dateAdded}
-              onChangeText={setDateAdded}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Expiration date (MM/DD/YYYY)"
-              value={expirationDate}
-              onChangeText={setExpirationDate}
-            />
-
-            <TouchableOpacity style={styles.submitButton} onPress={saveItem}>
-              <Text style={styles.submitButtonText}>
-                {editingID ? "Save Changes" : "Add to Pantry"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setModalVisible(false);
-                resetForm();
-              }}
+            {/* Add Item Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Add {category} Item</Text>
+                            <Pressable onPress={() => setModalVisible(false)}>
+                                <Ionicons name="close" size={24} color="#3A1E14" />
+                            </Pressable>
+                        </View>
+
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Item name *"
+                            placeholderTextColor="#999"
+                            value={newItem.name}
+                            onChangeText={(text) => setNewItem({ ...newItem, name: text })}
+                        />
+
+                        <View style={styles.row}>
+                            <TextInput
+                                style={[styles.input, styles.halfInput]}
+                                placeholder="Quantity"
+                                placeholderTextColor="#999"
+                                keyboardType="numeric"
+                                value={newItem.quantity}
+                                onChangeText={(text) => setNewItem({ ...newItem, quantity: text })}
+                            />
+                            <TextInput
+                                style={[styles.input, styles.halfInput]}
+                                placeholder="Unit (lbs, oz, etc)"
+                                placeholderTextColor="#999"
+                                value={newItem.unit}
+                                onChangeText={(text) => setNewItem({ ...newItem, unit: text })}
+                            />
+                        </View>
+
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Storage location"
+                            placeholderTextColor="#999"
+                            value={newItem.storageLocation}
+                            onChangeText={(text) => setNewItem({ ...newItem, storageLocation: text })}
+                        />
+
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Expiration date (MM/DD/YYYY)"
+                            placeholderTextColor="#999"
+                            value={newItem.expirationDate}
+                            onChangeText={(text) => setNewItem({ ...newItem, expirationDate: text })}
+                        />
+
+                        <Pressable style={styles.saveButton} onPress={handleAddItem}>
+                            <Text style={styles.saveButtonText}>Add Item</Text>
+                        </Pressable>
+                    </View>
+                </View>
+            </Modal>
         </View>
-      </Modal>
-    </View>
-  );
+    );
 }
 
 const styles = StyleSheet.create({
     container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    },
-
-    header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    marginBottom: 32,
-    paddingHorizontal: 20,
-    },
-    
-    backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 26,
-        backgroundColor: '#fff',
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 4,
-        marginRight: 42,
-    },
-    headerSpace: {
-        width: 52,
-    },
-    title: {
         flex: 1,
-        fontSize: 28,
-        textAlign: 'center',
-        color: colors.text,
-        fontFamily: fonts.bold,
+        backgroundColor: "#F5F3EE",
     },
-    searchRow: {
+    header: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 16,
-        gap: 15,
-        width: 324,
-        height: 40,
-        alignSelf: 'center',
+        justifyContent: 'space-between',
+        paddingTop: 70,
+        paddingBottom: 16,
+        paddingHorizontal: 20,
+        backgroundColor: "#F5F3EE",
     },
-    searchInput: {
-        flex: 1,
-        backgroundColor: '#fff',
-        borderRadius: 24,
-        padding: 10,
-        paddingLeft: 16,
-        height: 40,
-        fontSize: 12,
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 4,
-    },
-    addButton: {
-        backgroundColor: '#fff',
-        borderRadius: 22,
+    backButton: {
         width: 40,
         height: 40,
-        alignItems: 'center',
+        borderRadius: 20,
+        backgroundColor: '#fff',
         justifyContent: 'center',
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
         shadowRadius: 4,
-        elevation: 4,
+        elevation: 3,
     },
-
-    addButtonText: {
+    title: {
         fontSize: 24,
-        color: colors.text,
+        fontWeight: '700',
+        color: '#3A1E14',
     },
-
-    emptyText: {
-    textAlign: "center",
-    color: "#aaa",
-    marginTop: 40,
+    addButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
-
-    input: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 10,
-        marginBottom: 10,
+    listContainer: {
+        flex: 1,
+        paddingHorizontal: 20,
     },
-    
+    loadingText: {
+        textAlign: 'center',
+        color: '#888',
+        marginTop: 40,
+    },
+    emptyState: {
+        alignItems: 'center',
+        marginTop: 80,
+    },
+    emptyTitle: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: '#3A1E14',
+        marginTop: 16,
+    },
+    emptySubtitle: {
+        fontSize: 14,
+        color: '#888',
+        marginTop: 8,
+        textAlign: 'center',
+    },
     itemCard: {
-        borderRadius: 12,
-        padding: 12,
-        marginBottom: 10,
-        backgroundColor: "#fff",
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    itemInfo: {
+        flex: 1,
     },
     itemName: {
         fontSize: 16,
-        fontWeight: "bold",
+        fontWeight: '600',
+        color: '#3A1E14',
     },
-
-    itemDetail: {
+    itemDetails: {
+        fontSize: 14,
+        color: '#666',
+        marginTop: 4,
+    },
+    itemExpiry: {
         fontSize: 12,
-        color: "#888",
-        marginTop: 2,
+        color: '#C4725D',
+        marginTop: 4,
     },
-
-    editAction: {
-        backgroundColor: "#888",
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        justifyContent: "center",
-        alignItems: "center",
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
     },
-
-    deleteAction: {
-        backgroundColor: "#888",
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        justifyContent: "center",
-        alignItems: "center",
+    modalContent: {
+        backgroundColor: '#F5F3EE',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        paddingBottom: 40,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#3A1E14',
+    },
+    input: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        fontSize: 16,
+        marginBottom: 12,
+        color: '#333',
+    },
+    row: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    halfInput: {
+        flex: 1,
+    },
+    saveButton: {
+        backgroundColor: '#6C7C36',
+        borderRadius: 12,
+        paddingVertical: 16,
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    saveButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });

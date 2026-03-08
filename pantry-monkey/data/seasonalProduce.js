@@ -15,4 +15,43 @@ export const seasonalProduce = {
     12: ['citrus', 'kale', 'pear', 'cranberry'],
 };
 
-export const defaultSeasonal = seasonalProduce;
+export const defaultSeasonal = {
+  Spring: [
+    "Strawberries",
+    "Asparagus",
+    "Arugula",
+    "Artichokes",
+    "Fava Beans",
+    "Radishes",
+    "Snap Peas",
+    "Spinach",
+  ],
+  Summer: [
+    "Tomatoes",
+    "Corn",
+    "Peaches",
+    "Watermelon",
+    "Zucchini",
+    "Bell Peppers",
+    "Berries",
+    "Cucumbers",
+  ],
+  Fall: [
+    "Pumpkin",
+    "Apples",
+    "Squash",
+    "Sweet Potatoes",
+    "Pears",
+    "Cranberries",
+    "Brussels Sprouts",
+  ],
+  Winter: [
+    "Citrus",
+    "Kale",
+    "Beets",
+    "Carrots",
+    "Cabbage",
+    "Leeks",
+    "Parsnips",
+  ],
+};
