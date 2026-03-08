@@ -35,14 +35,14 @@ const seasonalProduce = {
   },
 };
 
-// Recipe categories
+// Recipe categories with images
 const recipeCategories = [
-  { name: "Breakfast", icon: "🍳" },
-  { name: "Lunch", icon: "🍔" },
-  { name: "Dinner", icon: "🍽️" },
-  { name: "Dessert", icon: "🍰" },
-  { name: "Snack", icon: "🍌" },
-  { name: "Appetizer", icon: "🥗" },
+  { name: "Breakfast", icon: null, image: require("../../assets/breakfast-pan.png"), type: "breakfast" },
+  { name: "Lunch", icon: "🥪", image: null, type: "main course" },
+  { name: "Dinner", icon: "🍽️", image: null, type: "main course" },
+  { name: "Dessert", icon: "🍰", image: null, type: "dessert" },
+  { name: "Snack", icon: "🍿", image: null, type: "snack" },
+  { name: "Appetizer", icon: "🥗", image: null, type: "appetizer" },
 ];
 
 const getCurrentSeason = () => {
@@ -106,10 +106,13 @@ export default function HomeScreen() {
     setFavorites((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleCategoryPress = (categoryName) => {
+  const handleCategoryPress = (category) => {
     router.push({
       pathname: "/recipeCategory",
-      params: { category: categoryName },
+      params: { 
+        category: category.name,
+        type: category.type 
+      },
     });
   };
 
@@ -166,9 +169,13 @@ export default function HomeScreen() {
           <Pressable 
             key={index} 
             style={styles.categoryCard}
-            onPress={() => handleCategoryPress(category.name)}
+            onPress={() => handleCategoryPress(category)}
           >
-            <Text style={styles.categoryIcon}>{category.icon}</Text>
+            {category.image ? (
+              <Image source={category.image} style={styles.categoryImage} />
+            ) : (
+              <Text style={styles.categoryCardIcon}>{category.icon}</Text>
+            )}
             <Text style={styles.categoryName}>{category.name}</Text>
           </Pressable>
         ))}
@@ -221,7 +228,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F3EE",
   },
   header: {
-    paddingTop: 60,
+    paddingTop: 70,
     paddingHorizontal: 24,
     paddingBottom: 20,
   },
@@ -334,8 +341,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  categoryIcon: {
+  categoryCardIcon: {
     fontSize: 36,
+    marginBottom: 6,
+  },
+  categoryImage: {
+    width: 50,
+    height: 50,
+    resizeMode: "contain",
     marginBottom: 6,
   },
   categoryName: {
