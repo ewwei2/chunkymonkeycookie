@@ -15,6 +15,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../firebase";
+import { colors, fonts } from '../styles/global';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -160,7 +161,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#F5F3EE",
+    backgroundColor: colors.background,
     justifyContent: "space-between",
   },
   content: {
@@ -171,18 +172,18 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: "600",
     textAlign: "center",
-    color: "#3A1E14",
+    color: colors.text,
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 18,
     textAlign: "center",
-    color: "#9A9A9A",
+    color: colors.secondary,
     marginBottom: 60,
     lineHeight: 24,
   },
   input: {
-    backgroundColor: "#EDEFF2",
+    backgroundColor: "#fff",
     borderRadius: 30,
     paddingVertical: 16,
     paddingHorizontal: 20,
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    backgroundColor: "#6C7C36",
+    backgroundColor: colors.green,
     paddingVertical: 22,
     alignItems: "center",
   },

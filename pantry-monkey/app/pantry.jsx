@@ -1,6 +1,6 @@
 import { View, Text, TextInput, Pressable, Image, StyleSheet, ScrollView } from 'react-native';
 import { router } from "expo-router";
-import { colors } from '../styles/global';
+import { colors, fonts } from '../styles/global';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import AddItemModal from '../components/AddItemModal';
@@ -53,6 +53,7 @@ export default function Pantry(){
                     style={styles.searchInput}
                     placeholder='Search for ingredients'
                     placeholderTextColor={"#5F5F5F"}
+                    placeholderFont={fonts.regular}
                     value={search}
                     onChangeText={setSearch}
                 />
@@ -199,9 +200,9 @@ const styles = StyleSheet.create({
 
     title: {
         fontSize: 36,
-        fontWeight: 'bold',
         textAlign: 'center',
         color: colors.text,
+        fontFamily: fonts.bold,
     },
 
     searchRow: {
