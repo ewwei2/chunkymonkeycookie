@@ -4,19 +4,14 @@ import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { auth, db } from "../firebase";
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
+import PantryItem from '../components/PantryItem';
+import AddItemModal from '../components/AddItemModal';
 
 export default function CategoryItems() {
     const { category } = useLocalSearchParams();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
-    const [newItem, setNewItem] = useState({
-        name: '',
-        quantity: '',
-        unit: '',
-        storageLocation: '',
-        expirationDate: '',
-    });
 
     useEffect(() => {
         loadItems();
@@ -40,32 +35,6 @@ export default function CategoryItems() {
             console.error("Error loading items:", error);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleAddItem = async () => {
-        if (!newItem.name.trim()) {
-            Alert.alert("Error", "Please enter an item name");
-            return;
-        }
-
-        if (!auth.currentUser) return;
-
-        try {
-            const pantryRef = collection(db, "users", auth.currentUser.uid, "pantry");
-            await addDoc(pantryRef, {
-                ...newItem,
-                category: category,
-                dateAdded: new Date().toLocaleDateString("en-US"),
-                createdAt: serverTimestamp(),
-            });
-            
-            setNewItem({ name: '', quantity: '', unit: '', storageLocation: '', expirationDate: '' });
-            setModalVisible(false);
-            loadItems();
-        } catch (error) {
-            console.error("Error adding item:", error);
-            Alert.alert("Error", "Failed to add item");
         }
     };
 
@@ -116,91 +85,24 @@ export default function CategoryItems() {
                     </View>
                 ) : (
                     items.map((item) => (
-                        <View key={item.id} style={styles.itemCard}>
-                            <View style={styles.itemInfo}>
-                                <Text style={styles.itemName}>{item.name}</Text>
-                                {item.quantity && (
-                                    <Text style={styles.itemDetails}>
-                                        {item.quantity} {item.unit}
-                                    </Text>
-                                )}
-                                {item.expirationDate && (
-                                    <Text style={styles.itemExpiry}>Expires: {item.expirationDate}</Text>
-                                )}
-                            </View>
-                            <Pressable onPress={() => handleDeleteItem(item.id)}>
-                                <Ionicons name="trash-outline" size={20} color="#e74c3c" />
-                            </Pressable>
-                        </View>
+                        <PantryItem
+                            key={item.id}
+                            item={item}
+                            onEdit={openEditModal}
+                            onDelete={handleDeleteItem}
+                        />
                     ))
                 )}
                 <View style={{ height: 100 }} />
             </ScrollView>
 
             {/* Add Item Modal */}
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Add {category} Item</Text>
-                            <Pressable onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#3A1E14" />
-                            </Pressable>
-                        </View>
-
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Item name *"
-                            placeholderTextColor="#999"
-                            value={newItem.name}
-                            onChangeText={(text) => setNewItem({ ...newItem, name: text })}
-                        />
-
-                        <View style={styles.row}>
-                            <TextInput
-                                style={[styles.input, styles.halfInput]}
-                                placeholder="Quantity"
-                                placeholderTextColor="#999"
-                                keyboardType="numeric"
-                                value={newItem.quantity}
-                                onChangeText={(text) => setNewItem({ ...newItem, quantity: text })}
-                            />
-                            <TextInput
-                                style={[styles.input, styles.halfInput]}
-                                placeholder="Unit (lbs, oz, etc)"
-                                placeholderTextColor="#999"
-                                value={newItem.unit}
-                                onChangeText={(text) => setNewItem({ ...newItem, unit: text })}
-                            />
-                        </View>
-
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Storage location"
-                            placeholderTextColor="#999"
-                            value={newItem.storageLocation}
-                            onChangeText={(text) => setNewItem({ ...newItem, storageLocation: text })}
-                        />
-
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Expiration date (MM/DD/YYYY)"
-                            placeholderTextColor="#999"
-                            value={newItem.expirationDate}
-                            onChangeText={(text) => setNewItem({ ...newItem, expirationDate: text })}
-                        />
-
-                        <Pressable style={styles.saveButton} onPress={handleAddItem}>
-                            <Text style={styles.saveButtonText}>Add Item</Text>
-                        </Pressable>
-                    </View>
-                </View>
-            </Modal>
+                <AddItemModal
+                    visible={modalVisible}
+                    onClose={() => setModalVisible(false)}
+                    onAdd={() => loadItems()}
+                    defaultCategory={category}
+                />
         </View>
     );
 }

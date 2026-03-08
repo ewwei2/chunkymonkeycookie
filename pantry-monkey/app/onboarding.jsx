@@ -16,20 +16,19 @@ import { doc, setDoc } from 'firebase/firestore';
 import RNPickerSelect from 'react-native-picker-select';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ColorSpace } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 const TOTAL_STEPS = 6;
 
 const DIETARY_OPTIONS = [
-    { key: 'GLUTEN-FREE', label: 'Gluten Free', image: require('../assets/GLUTEN-FREE.png'), checkedImage: require('../assets/GLUTEN-FREECHECK.png') },
-    { key: 'LACTOSEINTOLERANT', label: 'Lactose Intolerant', image: require('../assets/LACTOSEINTOLERANT.png'), checkedImage: require('../assets/LACTOSEINTOLERANTCHECK.png') },
-    { key: 'DAIRYFREE', label: 'Dairy Free', image: require('../assets/DAIRYFREE.png'), checkedImage: require('../assets/DAIRYFREECHECK.png') },
-    { key: 'NUTFREE', label: 'Nut Free', image: require('../assets/NUTFREE.png'), checkedImage: require('../assets/NUTFREECHECK.png') },
-    { key: 'PEANUT', label: 'Peanut Allergy', image: require('../assets/PEANUT.png'), checkedImage: require('../assets/PEANUTCHECK.png') },
-    { key: 'PESCATARIAN', label: 'Pescatarian', image: require('../assets/PESCATARIAN.png'), checkedImage: require('../assets/PESCATARIANCHECK.png') },
-    { key: 'VEGETARIAN', label: 'Vegetarian', image: require('../assets/VEGETARIAN.png'), checkedImage: require('../assets/VEGETARIANCHECK.png') },
-    { key: 'VEGAN', label: 'Vegan', image: require('../assets/VEGAN.png'), checkedImage: require('../assets/VEGANCHECK.png') },
+    { key: 'GLUTEN-FREE', image: require('../assets/GLUTEN-FREE.png'), checkedImage: require('../assets/GLUTEN-FREECHECK.png') },
+    { key: 'LACTOSEINTOLERANT', image: require('../assets/LACTOSEINTOLERANT.png'), checkedImage: require('../assets/LACTOSEINTOLERANTCHECK.png') },
+    { key: 'DAIRYFREE', image: require('../assets/DAIRYFREE.png'), checkedImage: require('../assets/DAIRYFREECHECK.png') },
+    { key: 'NUTFREE', image: require('../assets/NUTFREE.png'), checkedImage: require('../assets/NUTFREECHECK.png') },
+    { key: 'PEANUT', image: require('../assets/PEANUT.png'), checkedImage: require('../assets/PEANUTCHECK.png') },
+    { key: 'PESCATARIAN', image: require('../assets/PESCATARIAN.png'), checkedImage: require('../assets/PESCATARIANCHECK.png') },
+    { key: 'VEGETARIAN', image: require('../assets/VEGETARIAN.png'), checkedImage: require('../assets/VEGETARIANCHECK.png') },
+    { key: 'VEGAN', image: require('../assets/VEGAN.png'), checkedImage: require('../assets/VEGANCHECK.png') },
 ];
 
 const AVATARS = [
@@ -56,7 +55,6 @@ const pickerStyles = {
         color: '#1f1f1f',
         backgroundColor: '#f3f3f3',
         fontFamily: fonts.regular,
-        fontSize: 14,
     },
     inputAndroid: {
         borderWidth: 1,
@@ -69,7 +67,6 @@ const pickerStyles = {
         color: '#1f1f1f',
         backgroundColor: '#f3f3f3',
         fontFamily: fonts.regular,
-        fontSize: 14,
     },
     placeholder: {
         color: '#7a7a7a',
@@ -79,13 +76,6 @@ const pickerStyles = {
         top: 14,
         right: 12,
     },
-    done: {
-        color: colors.green,
-        fontFamily: fonts.bold,
-    },
-    modalViewTop: { backgroundColor: '#ffffff' },
-    modalViewMiddle: { backgroundColor: '#ffffff' },
-    modalViewBottom: { backgroundColor: '#ffffff' },
 };
 
 export default function Onboarding() {
@@ -95,16 +85,14 @@ export default function Onboarding() {
     const [selectedDietary, setSelectedDietary] = useState([]);
     const [selectedAvatar, setSelectedAvatar] = useState(null);
 
-    // restore step on mount
     useEffect(() => {
         const restoreStep = async () => {
             const saved = await AsyncStorage.getItem('onboardingStep');
-            if (saved) setStep(parseInt(saved));
+            if (saved) setStep(parseInt(saved, 10));
         };
         restoreStep();
     }, []);
 
-    // save step whenever it changes
     useEffect(() => {
         AsyncStorage.setItem('onboardingStep', String(step));
     }, [step]);
@@ -122,10 +110,12 @@ export default function Onboarding() {
     const saveAndFinish = async () => {
         await AsyncStorage.removeItem('onboardingStep');
         const user = auth.currentUser;
+
         if (!user) {
             router.replace('/home');
             return;
         }
+
         try {
             await setDoc(
                 doc(db, 'users', user.uid),
@@ -159,179 +149,224 @@ export default function Onboarding() {
         </View>
     );
 
-    // step 1 - welcome
-    if (step === 1) return (
-        <View style={styles.container}>
-            <ProgressBar />
-            <View style={styles.content}>
-                <Text style={styles.title}>Hi there!</Text>
-                <Text style={styles.subtitle}>Before you start, we have a few questions</Text>
-                <Image source={require('../assets/monkey.png')} style={styles.mascot} resizeMode="contain" />
-            </View>
-            <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
-                <Text style={styles.nextButtonText}>Next</Text>
-            </TouchableOpacity>
-        </View>
-    );
-
-    // step 2 - who are you
-    if (step === 2) return (
-        <View style={styles.container}>
-            <ProgressBar />
-            <View style={styles.content}>
-                <Text style={styles.title}>Who are you?</Text>
-                <Text style={styles.subtitle}>What would you like to be called?</Text>
-                <View style={styles.formBlock}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Name"
-                        placeholderTextColor="#999"
-                        value={name}
-                        onChangeText={setName}
-                    />
-                    <RNPickerSelect
-                        onValueChange={(value) => setPronouns(value)}
-                        value={pronouns}
-                        placeholder={{ label: 'Pronouns...', value: '' }}
-                        doneText='Done'
-                        darkTheme={false}
-                        useNativeAndroidPickerStyle={false}
-                        items={[
-                            { label: 'He/Him', value: 'He/Him' },
-                            { label: 'She/Her', value: 'She/Her' },
-                            { label: 'They/Them', value: 'They/Them' },
-                            { label: 'Prefer not to say', value: 'Prefer not to say' },
-                        ]}
-                        style={pickerStyles}
-                        Icon={() => <Ionicons name='chevron-down' size={20} color='#5f5f5f' />}
+    if (step === 1) {
+        return (
+            <View style={styles.container}>
+                <ProgressBar />
+                <View style={styles.content}>
+                    <Text style={styles.title}>Hi there!</Text>
+                    <Text style={styles.subtitle}>Before you start, we have a few questions</Text>
+                    <Image
+                        source={require('../assets/monkey.png')}
+                        style={styles.mascot}
+                        resizeMode='contain'
                     />
                 </View>
+                <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
+                    <Text style={styles.nextButtonText}>Next</Text>
+                </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
-                <Text style={styles.nextButtonText}>Next</Text>
-            </TouchableOpacity>
-        </View>
-    );
+        );
+    }
 
-    // step 3 - dietary restrictions
-    if (step === 3) return (
-        <View style={styles.container}>
-            <ProgressBar />
-            <View style={styles.content}>
-                <Text style={styles.title}>
-                    What's <Text style={styles.highlight}>not</Text> on{'\n'}your plate
-                </Text>
-                <Text style={styles.subtitle}>Pick everything that fits you</Text>
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.carouselContainer}
-                    snapToInterval={width * 0.55 + 16}
-                    decelerationRate="fast"
-                >
-                    {DIETARY_OPTIONS.map((option) => {
-                        const isSelected = selectedDietary.includes(option.key);
-                        return (
+    if (step === 2) {
+        return (
+            <View style={styles.container}>
+                <ProgressBar />
+                <View style={styles.content}>
+                    <Text style={styles.title}>Who are you?</Text>
+                    <Text style={styles.subtitle}>What would you like to be called?</Text>
+
+                    <View style={styles.formBlock}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder='Name'
+                            placeholderTextColor='#999'
+                            value={name}
+                            onChangeText={setName}
+                        />
+
+                        <RNPickerSelect
+                            onValueChange={(value) => setPronouns(value)}
+                            value={pronouns}
+                            placeholder={{ label: 'Pronouns...', value: '' }}
+                            doneText='Done'
+                            useNativeAndroidPickerStyle={false}
+                            items={[
+                                { label: 'He/Him', value: 'He/Him' },
+                                { label: 'She/Her', value: 'She/Her' },
+                                { label: 'They/Them', value: 'They/Them' },
+                                { label: 'Prefer not to say', value: 'Prefer not to say' },
+                            ]}
+                            style={pickerStyles}
+                            Icon={() => <Ionicons name='chevron-down' size={20} color='#5f5f5f' />}
+                        />
+                    </View>
+                </View>
+
+                <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
+                    <Text style={styles.nextButtonText}>Next</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    if (step === 3) {
+        return (
+            <View style={styles.container}>
+                <ProgressBar />
+                <View style={styles.content}>
+                    <Text style={styles.title}>
+                        What's <Text style={styles.highlight}>not</Text> on{'\n'}your plate
+                    </Text>
+                    <Text style={styles.subtitle}>Pick everything that fits you</Text>
+
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.carouselContainer}
+                        snapToInterval={width * 0.55 + 16}
+                        decelerationRate='fast'
+                    >
+                        {DIETARY_OPTIONS.map((option) => {
+                            const isSelected = selectedDietary.includes(option.key);
+                            return (
+                                <TouchableOpacity
+                                    key={option.key}
+                                    onPress={() => toggleDietary(option.key)}
+                                    style={styles.dietCard}
+                                >
+                                    <Image
+                                        source={isSelected ? option.checkedImage : option.image}
+                                        style={styles.dietImage}
+                                        resizeMode='contain'
+                                    />
+                                    <Text style={styles.dietLabel}>{option.label}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
+
+                <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
+                    <Text style={styles.nextButtonText}>Next</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={nextStep} style={styles.skipButton}>
+                    <Text style={styles.skipText}>Set up later</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    if (step === 4) {
+        return (
+            <View style={styles.container}>
+                <ProgressBar />
+                <View style={styles.content}>
+                    <Text style={styles.title}>Avatar</Text>
+                    <Text style={styles.subtitle}>Which Don you cooking with?</Text>
+
+                    <View style={styles.avatarGrid}>
+                        {AVATARS.map((avatar) => (
                             <TouchableOpacity
-                                key={option.key}
-                                onPress={() => toggleDietary(option.key)}
-                                style={styles.dietCard}
+                                key={avatar.key}
+                                onPress={() => setSelectedAvatar(avatar.key)}
+                                style={[
+                                    styles.avatarItem,
+                                    selectedAvatar === avatar.key && styles.avatarSelected,
+                                ]}
                             >
                                 <Image
-                                    source={isSelected ? option.checkedImage : option.image}
-                                    style={styles.dietImage}
-                                    resizeMode="contain"
+                                    source={avatar.image}
+                                    style={styles.avatarImage}
+                                    resizeMode='contain'
                                 />
-                                <Text style={styles.dietLabel}>{option.label}</Text>
                             </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
-            </View>
-            <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
-                <Text style={styles.nextButtonText}>Next</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={nextStep} style={{ marginTop: 12 }}>
-                <Text style={styles.skipText}>Set up later</Text>
-            </TouchableOpacity>
-        </View>
-    );
-
-    // step 4 - avatar
-    if (step === 4) return (
-        <View style={styles.container}>
-            <ProgressBar />
-            <View style={styles.content}>
-                <Text style={styles.title}>Avatar</Text>
-                <Text style={styles.subtitle}>Which Don you cooking with?</Text>
-                <View style={styles.avatarGrid}>
-                    {AVATARS.map((avatar) => (
-                        <TouchableOpacity
-                            key={avatar.key}
-                            onPress={() => setSelectedAvatar(avatar.key)}
-                            style={[
-                                styles.avatarItem,
-                                selectedAvatar === avatar.key && styles.avatarSelected,
-                            ]}
-                        >
-                            <Image source={avatar.image} style={styles.avatarImage} resizeMode="contain" />
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </View>
-            <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
-                <Text style={styles.nextButtonText}>Next</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={nextStep} style={{ marginTop: 12 }}>
-                <Text style={styles.skipText}>Set up later</Text>
-            </TouchableOpacity>
-        </View>
-    );
-
-    // step 5 - notifications
-    if (step === 5) return (
-        <View style={styles.container}>
-            <ProgressBar />
-            <View style={styles.content}>
-                <Text style={styles.title}>Notifications</Text>
-                <Image source={require('../assets/flowerMonkey.png')} style={styles.mascot} resizeMode="contain" />
-                <View style={styles.notifList}>
-                    <View style={styles.notifItem}>
-                        <Image source={require('../assets/mood-smile.png')} style={styles.notifIcon} resizeMode="contain" />
-                        <Text style={styles.notifText}>Next farmers market nearby</Text>
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.notifItem}>
-                        <Image source={require('../assets/trash.png')} style={styles.notifIcon} resizeMode="contain" />
-                        <Text style={styles.notifText}>Upcoming food expirations</Text>
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.notifItem}>
-                        <Image source={require('../assets/sparkles-sharp.png')} style={styles.notifIcon} resizeMode="contain" />
-                        <Text style={styles.notifText}>Recommended new recipes</Text>
+                        ))}
                     </View>
                 </View>
-            </View>
-            <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
-                <Text style={styles.nextButtonText}>Turn on Notifications</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={nextStep} style={{ marginTop: 12 }}>
-                <Text style={styles.skipText}>Set up later</Text>
-            </TouchableOpacity>
-        </View>
-    );
 
-    // step 6 - your pantry
+                <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
+                    <Text style={styles.nextButtonText}>Next</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={nextStep} style={styles.skipButton}>
+                    <Text style={styles.skipText}>Set up later</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    if (step === 5) {
+        return (
+            <View style={styles.container}>
+                <ProgressBar />
+                <View style={styles.content}>
+                    <Text style={styles.title}>Notifications</Text>
+                    <Image
+                        source={require('../assets/flowerMonkey.png')}
+                        style={styles.mascot}
+                        resizeMode='contain'
+                    />
+
+                    <View style={styles.notifList}>
+                        <View style={styles.notifItem}>
+                            <Image
+                                source={require('../assets/mood-smile.png')}
+                                style={styles.notifIcon}
+                                resizeMode='contain'
+                            />
+                            <Text style={styles.notifText}>Next farmers market nearby</Text>
+                        </View>
+
+                        <View style={styles.divider} />
+
+                        <View style={styles.notifItem}>
+                            <Image
+                                source={require('../assets/trash.png')}
+                                style={styles.notifIcon}
+                                resizeMode='contain'
+                            />
+                            <Text style={styles.notifText}>Upcoming food expirations</Text>
+                        </View>
+
+                        <View style={styles.divider} />
+
+                        <View style={styles.notifItem}>
+                            <Image
+                                source={require('../assets/sparkles-sharp.png')}
+                                style={styles.notifIcon}
+                                resizeMode='contain'
+                            />
+                            <Text style={styles.notifText}>Recommended new recipes</Text>
+                        </View>
+                    </View>
+                </View>
+
+                <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
+                    <Text style={styles.nextButtonText}>Turn on Notifications</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={nextStep} style={styles.skipButton}>
+                    <Text style={styles.skipText}>Set up later</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             <ProgressBar />
             <View style={styles.content}>
                 <Text style={styles.title}>Your Pantry</Text>
                 <Text style={styles.subtitle}>Add 5 items to get started</Text>
+
                 <TouchableOpacity style={styles.addFoodRow} onPress={() => router.push('/pantry')}>
                     <Text style={styles.addFoodText}>+  Add food to your pantry</Text>
                 </TouchableOpacity>
             </View>
+
             <TouchableOpacity style={styles.nextButton} onPress={saveAndFinish}>
                 <Text style={styles.nextButtonText}>Let's Cook</Text>
             </TouchableOpacity>
@@ -485,6 +520,9 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: fonts.regular,
         color: '#888',
+    },
+    skipButton: {
+        marginTop: 12,
     },
     skipText: {
         textAlign: 'center',
