@@ -1,11 +1,27 @@
-import { View, Text, TextInput, TouchableOpacity, FlatList, Modal, Alert, StyleSheet, StatusBar } from 'react-native';
-import { useState } from 'react';
+import { colors } from '../styles/global';
+import { useState, useEffect } from 'react';
+import { auth } from '../firebase';
+import {
+  addPantryItem as addPantryItemToFirestore,
+  getPantryItems,
+  updatePantryItem as updatePantryItemInFirestore,
+  deletePantryItem as deletePantryItemFromFirestore,
+} from '../services/pantryService';
+
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  Modal,
+  Alert,
+  StyleSheet,
+} from 'react-native';
+
 import { Picker } from '@react-native-picker/picker';
 import { Swipeable } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Ionicons } from '@expo/vector-icons';
-import { seasonalProduce, defaultSeasonal } from '../data/seasonalProduce';
-import { colors } from '../styles/global';
-
 
 export default function Pantry() {
 
@@ -27,6 +43,23 @@ export default function Pantry() {
 
     // search and filter state
     const [search, setSearch] = useState('');
+
+    const user = auth.currentUser;
+
+    const loadItems = async () => {
+    if (!user) return;
+
+    try {
+        const pantryItems = await getPantryItems(user.uid);
+        setItems(pantryItems);
+    } catch (error) {
+        Alert.alert("Error", error.message);
+    }
+    };
+
+    useEffect(() => {
+    loadItems();
+    }, []);
 
     // auto estimate expiration date based on category
     const estimateExpiration = (category, itemName) => {
@@ -89,42 +122,41 @@ export default function Pantry() {
     };
 
     // create new item or update existing
-    const addItem = () => {
-        if (!name) return;
+    const addItem = async () => {
+        if (!name || !user) return;
 
-        if (editingID) {
-            // update existing item
-            setItems(items.map(item =>
-                item.id === editingID
-                    ? { ...item, name, category, quantity, unit, storageLocation, dateAdded, expirationDate: expirationDate || estimateExpiration(category, name), autoEstimated: !expirationDate }
-                    : item
-            ));
+        const itemData = {
+            name,
+            category,
+            quantity,
+            unit,
+            storageLocation,
+            dateAdded: editingID ? dateAdded : new Date().toLocaleDateString('en-US'),
+            expirationDate: expirationDate || estimateExpiration(category, name),
+            autoEstimated: !expirationDate,
+        };
+
+        try {
+            if (editingID) {
+            await updatePantryItemInFirestore(user.uid, editingID, itemData);
             setEditingID(null);
-        } else {
-            // add new item
-            const newItem = {
-                id: Date.now().toString(),
-                name, category, quantity, unit, storageLocation,
-                dateAdded: new Date().toLocaleDateString('en-US'),
-                expirationDate: expirationDate || estimateExpiration(category, name),
-                autoEstimated: !expirationDate,
-            };
-            setItems([...items, newItem]);
+            } else {
+            await addPantryItemToFirestore(user.uid, itemData);
+            }
+
+            setName('');
+            setCategory('');
+            setQuantity('');
+            setUnit('');
+            setStorageLocation('');
+            setExpirationDate('');
+            setDateAdded(new Date().toLocaleDateString('en-US'));
+            setModalVisible(false);
+
+            await loadItems();
+        } catch (error) {
+            Alert.alert("Error", error.message);
         }
-
-        // clear form and close modal
-        setName('');
-        setCategory('');
-        setQuantity('');
-        setUnit('');
-        setStorageLocation('');
-        setExpirationDate('');
-        setModalVisible(false);
-    };
-
-    // remove item by id
-    const deleteItem = (id) => {
-        setItems(items.filter(item => item.id !== id));
     };
 
     // open edit modal pre-filled with item data
