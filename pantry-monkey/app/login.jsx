@@ -99,6 +99,12 @@ export default function LoginScreen() {
             setErrorMessage("");
           }}
         />
+
+        {/* DEV BUTTON */}
+      <Pressable onPress={() => router.push("/pantry")}>
+        <Text>Skip Login → Pantry</Text>
+      </Pressable>
+
         {/* DEV BUTTON */}
         <Pressable
         onPress={() =>
