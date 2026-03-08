@@ -1,166 +1,199 @@
-import { View, Text, TextInput, Pressable, Image, StyleSheet, ScrollView } from 'react-native';
-import { router } from "expo-router";
+import {
+    View,
+    Text,
+    TextInput,
+    Pressable,
+    Image,
+    StyleSheet,
+    ScrollView,
+    Dimensions,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { colors, fonts } from '../styles/global';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import AddItemModal from '../components/AddItemModal';
 
+const { width } = Dimensions.get('window');
+const titleSize = width < 380 ? 32 : 36;
 
-    // pantry categories
-    const categories = [
-        "Grains",
-        "Eggs & Dairy",
-        "Seafood",
-        "Fruits",
-        "Vegetables",
-        "Drinks",
-        "Meats",
-        "Snacks & Sweets",
-        "Frozen",
-        "Other",
-    ];
+const categories = [
+    'Grains',
+    'Eggs & Dairy',
+    'Seafood',
+    'Fruits',
+    'Vegetables',
+    'Drinks',
+    'Meats',
+    'Snacks & Sweets',
+    'Frozen',
+    'Other',
+];
 
-export default function Pantry(){
-
+export default function Pantry() {
     const [search, setSearch] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
 
-    // open category when user taps item
-    // navigates to categoryItem.jsx
     const openCategory = (category) => {
         router.push({
-            pathname: "/categoryItem",  // screen to open
-            params: { category },   // go to chosen category
+            pathname: '/categoryItem',
+            params: { category },
         });
     };
 
     return (
-        <View style={ styles.container }>
-
+        <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-            <Pressable style={styles.backButton} onPress={() => router.back()}>
-                <Ionicons name='arrow-back' size={28} color={colors.text} />
-            </Pressable>
+                <Pressable style={styles.backButton} onPress={() => router.back()}>
+                    <Ionicons name='arrow-back' size={28} color={colors.text} />
+                </Pressable>
 
-            <Text style={styles.title}>Pantry</Text>
+                <Text style={styles.title}>Pantry</Text>
 
-            <View style={styles.headerSpace} />
-        </View>
+                <View style={styles.headerSpace} />
+            </View>
 
-            {/* search bar + add button */}
             <View style={styles.searchRow}>
                 <TextInput
                     style={styles.searchInput}
                     placeholder='Search for ingredients'
-                    placeholderTextColor={"#5F5F5F"}
-                    placeholderFont={fonts.regular}
+                    placeholderTextColor='#5F5F5F'
                     value={search}
                     onChangeText={setSearch}
                 />
-                <Pressable style={styles.addButton} onPress={() => {
-                    console.log('pressed');
-                    setModalVisible(true);
-                }}>
+
+                <Pressable
+                    style={styles.addButton}
+                    onPress={() => {
+                        setModalVisible(true);
+                    }}
+                >
                     <Text style={styles.addButtonText}>+</Text>
                 </Pressable>
             </View>
 
-            {/* shelves */}
             <View style={styles.pantryCard}>
                 <ScrollView
-                contentContainerStyle={styles.pantryScrollContent}
-                showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.pantryScrollContent}
+                    showsVerticalScrollIndicator={false}
                 >
-                <View style={styles.shelfWrapper}>
-                    <Image
-                    source={require('../assets/pantry.png')}
-                    style={styles.ShelfImage}
-                    resizeMode='contain'
-                    />
+                    <View style={styles.shelfWrapper}>
+                        <Image
+                            source={require('../assets/pantry.png')}
+                            style={styles.ShelfImage}
+                            resizeMode='contain'
+                        />
 
-                {/* food overlays */}
-                <Pressable
-                    style={[styles.categoryIcon, styles.grains]}
-                    onPress={() => openCategory('Grains')}
-                >
-                    <Image source={require('../assets/bread.png')} style={styles.foodIcon} />
-                </Pressable>
+                        <Pressable
+                            style={[styles.categoryIcon, styles.grains]}
+                            onPress={() => openCategory('Grains')}
+                        >
+                            <Image
+                                source={require('../assets/bread.png')}
+                                style={styles.foodIcon}
+                            />
+                        </Pressable>
 
-                <Pressable
-                    style={[styles.categoryIcon, styles.dairy]}
-                    onPress={() => openCategory('Eggs & Dairy')}
-                >
-                    <Image source={require('../assets/dairy.png')} style={styles.foodIcon} />
-                </Pressable>
+                        <Pressable
+                            style={[styles.categoryIcon, styles.dairy]}
+                            onPress={() => openCategory('Eggs & Dairy')}
+                        >
+                            <Image
+                                source={require('../assets/dairy.png')}
+                                style={styles.foodIcon}
+                            />
+                        </Pressable>
 
-                <Pressable
-                    style={[styles.categoryIcon, styles.seafood]}
-                    onPress={() => openCategory('Seafood')}
-                >
-                    <Image source={require('../assets/salmon.png')} style={styles.foodIcon} />
-                </Pressable>
+                        <Pressable
+                            style={[styles.categoryIcon, styles.seafood]}
+                            onPress={() => openCategory('Seafood')}
+                        >
+                            <Image
+                                source={require('../assets/salmon.png')}
+                                style={styles.foodIcon}
+                            />
+                        </Pressable>
 
-                <Pressable
-                    style={[styles.categoryIcon, styles.fruits]}
-                    onPress={() => openCategory('Fruits')}
-                >
-                    <Image source={require('../assets/fruits.png')} style={styles.foodIcon} />
-                </Pressable>
+                        <Pressable
+                            style={[styles.categoryIcon, styles.fruits]}
+                            onPress={() => openCategory('Fruits')}
+                        >
+                            <Image
+                                source={require('../assets/fruits.png')}
+                                style={styles.foodIcon}
+                            />
+                        </Pressable>
 
-                <Pressable
-                    style={[styles.categoryIcon, styles.meat]}
-                    onPress={() => openCategory('Meats')}
-                >
-                    <Image source={require('../assets/meat.png')} style={styles.foodIcon} />
-                </Pressable>
+                        <Pressable
+                            style={[styles.categoryIcon, styles.meat]}
+                            onPress={() => openCategory('Meats')}
+                        >
+                            <Image
+                                source={require('../assets/meat.png')}
+                                style={styles.foodIcon}
+                            />
+                        </Pressable>
 
-                <Pressable
-                    style={[styles.categoryIcon, styles.veggies]}
-                    onPress={() => openCategory('Vegetables')}
-                >
-                    <Image source={require('../assets/vegetables.png')} style={styles.foodIcon} />
-                </Pressable>
+                        <Pressable
+                            style={[styles.categoryIcon, styles.veggies]}
+                            onPress={() => openCategory('Vegetables')}
+                        >
+                            <Image
+                                source={require('../assets/vegetables.png')}
+                                style={styles.foodIcon}
+                            />
+                        </Pressable>
 
-                <Pressable
-                    style={[styles.categoryIcon, styles.sweets]}
-                    onPress={() => openCategory('Snacks & Sweets')}
-                >
-                    <Image source={require('../assets/cheesecake.png')} style={styles.foodIcon} />
-                </Pressable>
+                        <Pressable
+                            style={[styles.categoryIcon, styles.sweets]}
+                            onPress={() => openCategory('Snacks & Sweets')}
+                        >
+                            <Image
+                                source={require('../assets/cheesecake.png')}
+                                style={styles.foodIcon}
+                            />
+                        </Pressable>
 
-                <Pressable
-                    style={[styles.categoryIcon, styles.drinks]}
-                    onPress={() => openCategory('Drinks')}
-                >
-                    <Image source={require('../assets/drinks.png')} style={styles.foodIcon} />
-                </Pressable>
+                        <Pressable
+                            style={[styles.categoryIcon, styles.drinks]}
+                            onPress={() => openCategory('Drinks')}
+                        >
+                            <Image
+                                source={require('../assets/drinks.png')}
+                                style={styles.foodIcon}
+                            />
+                        </Pressable>
 
-                <Pressable
-                    style={[styles.categoryIcon, styles.ice]}
-                    onPress={() => openCategory('Frozen')}
-                >
-                    <Image source={require('../assets/ice.png')} style={styles.foodIcon} />
-                </Pressable>
-                
-                <Pressable
-                    style={[styles.categoryIcon, styles.cereal]}
-                    onPress={() => openCategory('Other')}
-                >
-                    <Image source={require('../assets/cereal.png')} style={styles.foodIcon} />
-                </Pressable>
+                        <Pressable
+                            style={[styles.categoryIcon, styles.ice]}
+                            onPress={() => openCategory('Frozen')}
+                        >
+                            <Image
+                                source={require('../assets/ice.png')}
+                                style={styles.foodIcon}
+                            />
+                        </Pressable>
 
+                        <Pressable
+                            style={[styles.categoryIcon, styles.cereal]}
+                            onPress={() => openCategory('Other')}
+                        >
+                            <Image
+                                source={require('../assets/cereal.png')}
+                                style={styles.foodIcon}
+                            />
+                        </Pressable>
+                    </View>
+                </ScrollView>
             </View>
-            </ScrollView>
-            </View>
 
-            {/* add item modal */}
             <AddItemModal
                 visible={modalVisible}
                 onClose={() => setModalVisible(false)}
-                onAdd={(item) => console.log(item)} // hook up to Firestore later
+                onAdd={(item) => console.log(item)}
             />
-        
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -174,11 +207,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 16,
-        marginBottom: 32,
+        marginTop: 0,
+        marginBottom: 24,
         paddingHorizontal: 20,
     },
-    
+
     backButton: {
         width: 44,
         height: 44,
@@ -199,7 +232,7 @@ const styles = StyleSheet.create({
     },
 
     title: {
-        fontSize: 36,
+        fontSize: titleSize,
         textAlign: 'center',
         color: colors.text,
         fontFamily: fonts.bold,
@@ -223,12 +256,11 @@ const styles = StyleSheet.create({
         paddingLeft: 16,
         height: 40,
         fontSize: 12,
-        // iOS
+        fontFamily: fonts.regular,
         shadowColor: colors.shadow,
-        shadowOffset: {width: 0, height: 4 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.25,
         shadowRadius: 4,
-        // android
         elevation: 4,
     },
 
@@ -239,18 +271,17 @@ const styles = StyleSheet.create({
         height: 40,
         alignItems: 'center',
         justifyContent: 'center',
-        // iOS
         shadowColor: colors.shadow,
-        shadowOffset: {width: 0, height: 4 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.25,
         shadowRadius: 4,
-        // android
         elevation: 4,
     },
 
     addButtonText: {
         fontSize: 24,
         color: colors.text,
+        fontFamily: fonts.regular,
     },
 
     pantryCard: {
@@ -265,11 +296,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingBottom: 30,
     },
-    
+
     shelfWrapper: {
-        width: "100%",
-        alignItems: "center",
-        position: "relative",
+        width: '100%',
+        alignItems: 'center',
+        position: 'relative',
         marginTop: 100,
     },
 
@@ -281,9 +312,9 @@ const styles = StyleSheet.create({
     },
 
     ShelfImage: {
-        width: "100%",
+        width: '100%',
         height: 700,
-    },  
+    },
 
     foodIcon: {
         width: 90,
@@ -304,7 +335,7 @@ const styles = StyleSheet.create({
         top: -76,
         right: 80,
     },
-    
+
     seafood: {
         top: 116,
         left: 78,
