@@ -14,10 +14,10 @@ export default function TabLayout() {
           borderTopColor: "#E8E8E8",
           paddingTop: 8,
           paddingBottom: 8,
-          height: 60,
+          height: 65,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: "500",
         },
       }}
@@ -32,20 +32,29 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="cookbook"
+        options={{
+          title: "Cookbook",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="book-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="foodmap"
+        options={{
+          title: "Food Map",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="map-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="pantry"
         options={{
           title: "Pantry",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="basket-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="recipe"
-        options={{
-          title: "Recipes",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="restaurant-outline" size={size} color={color} />
           ),
         }}
       />
