@@ -231,26 +231,6 @@ export default function LoginScreen() {
                         {loading ? 'Loading...' : (isLogin ? 'Sign In' : 'Create Account')}
                     </Text>
                 </Pressable>
-
-                {__DEV__ && (
-                    <>
-                        <Pressable
-                            style={styles.devButton}
-                            onPress={() => router.push('/pantry')}
-                        >
-                            <Text style={styles.devButtonText}>DEV: Skip Login → Pantry</Text>
-                        </Pressable>
-
-                        <Pressable
-                            style={styles.devButton}
-                            onPress={() => router.replace('/onboarding')}
-                        >
-                            <Text style={styles.devButtonText}>
-                                DEV: Skip to Onboarding
-                            </Text>
-                        </Pressable>
-                    </>
-                )}
             </View>
         </KeyboardAvoidingView>
     );
