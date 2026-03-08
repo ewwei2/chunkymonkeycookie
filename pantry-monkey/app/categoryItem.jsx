@@ -4,7 +4,7 @@ import { Picker } from '@react-native-picker/picker';
 import { Swipeable } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Ionicons } from '@expo/vector-icons';
 import { defaultSeasonal } from '../data/seasonalProduce';
-import { colors } from '../styles/global';
+import { colors, fonts } from '../styles/global';
 import { useLocalSearchParams } from 'expo-router';
 import { auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -367,9 +367,9 @@ const styles = StyleSheet.create({
     title: {
         flex: 1,
         fontSize: 28,
-        fontWeight: 'bold',
         textAlign: 'center',
         color: colors.text,
+        fontFamily: fonts.bold,
     },
     searchRow: {
         flexDirection: 'row',
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
         fontSize: 24,
         color: colors.text,
     },
-    
+
     emptyText: {
     textAlign: "center",
     color: "#aaa",
