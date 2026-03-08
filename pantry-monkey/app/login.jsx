@@ -175,7 +175,31 @@ export default function LoginScreen() {
             {loading ? "Loading..." : "Continue"}
           </Text>
         </Pressable>
-      </View>
+      
+      {/* DEV BUTTON */}
+      <Pressable onPress={() => router.push("/pantry")}>
+        <Text>Skip Login → Pantry</Text>
+      </Pressable>
+
+      {__DEV__ && (
+    <Pressable 
+        style={{ marginTop: 16, padding: 12, backgroundColor: '#eee', borderRadius: 8 }}
+        onPress={() => router.replace('/onboarding')}
+    >
+        <Text style={{ textAlign: 'center', color: '#333' }}>DEV: Skip to Onboarding</Text>
+    </Pressable>
+
+)}
+
+      <Pressable
+        style={[styles.button, loading && { opacity: 0.6 }]}
+        onPress={handleContinue}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? "Loading..." : "Continue"}
+        </Text>
+      </Pressable>
     </KeyboardAvoidingView>
   );
 }

@@ -57,4 +57,5 @@ export const shadows = {
 export const fonts = {
     regular: 'Helvetica',
     bold: 'Helvetica-Bold',
+    head: 'Header',
 };
