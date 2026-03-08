@@ -16,6 +16,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import RNPickerSelect from 'react-native-picker-select';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ColorSpace } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 const TOTAL_STEPS = 6;

@@ -10,6 +10,7 @@ export const colors = {
     border: '#E0DDD8',
     error: '#e74c3c',
     white: '#fff',
+    green: '#677D32',
 };
 
 export const spacing = {
